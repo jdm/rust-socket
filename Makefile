@@ -1,9 +1,9 @@
 all:
-	rustc socket.rc
+	rustc socket.rc -g
 
 test:
-	rustc --test socket.rc
-	./socket
+	rustc --test socket.rc -g
+	$(DEBUGGER) ./socket
 
 clean:
 	rm -rf libsocket-*
