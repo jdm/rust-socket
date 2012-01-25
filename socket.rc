@@ -1,0 +1,11 @@
+#[link(name = "sockets",
+       vers = "0.1",
+       uuid = "AF82CEF5-A320-49C0-AE56-43129C5229D5",
+       url = "")];
+
+#[comment = "Rust socket library"];
+#[license = "MIT"];
+#[crate_type = "lib"];
+
+use std;
+mod socket;
