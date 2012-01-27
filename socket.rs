@@ -62,12 +62,13 @@ const INET6_ADDRSTRLEN: ctypes::c_int = 46_i32;
 
 type socklen_t = ctypes::c_int;
 type x = u8;
-type sockaddr_storage = (i16, x, x, x, x, x, x, x, x, x, x, x, x, x, x);
+type sockaddr_storage = (i16, x, x, x, x, x, x, x, x, x, x, x, x, x, x); //XXX this is not big enough
 type sockaddr_basic = {sin_family: i16};
-type sockaddr4_in = {sin_family: i16, sin_port: u16, sin_addr: in4_addr};
-type in4_addr = {s_addr: u32};
+type sockaddr4_in = {sin_family: i16, sin_port: u16, sin_addr: in4_addr,
+                     sin_zero: (x, x, x, x, x, x, x, x)};
+type in4_addr = {s_addr: ctypes::ulong};
 type sockaddr6_in = {sin6_family: u16, sin6_port: u16, sin6_flowinfo: u32, sin6_addr: in6_addr, sin6_scope_id: u32};
-type in6_addr = {s6_addr: *u8};
+type in6_addr = {s6_addr: (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)};
 
 enum sockaddr {
     unix(sockaddr_basic),
@@ -232,7 +233,6 @@ fn recvfrom(sock: @socket_handle, len: uint)
                    } else {
                        unix(unsafe::reinterpret_cast(from_saddr))
                    }))
-
     }
 }
 
