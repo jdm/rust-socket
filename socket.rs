@@ -191,7 +191,7 @@ fn send(sock: @socket_handle, buf: [u8]) -> result::t<uint, str> unsafe {
 }
 
 fn recv(sock: @socket_handle, len: uint) -> result::t<[u8], str> unsafe {
-    let buf = vec::init_elt(0u8, len);
+    let buf = vec::init_elt(len, 0u8);
     if c::recv(**sock, vec::unsafe::to_ptr(buf), len as ctypes::c_int, 0i32) == -1_i32 {
         result::err("recv failed")
     } else {
@@ -206,6 +206,8 @@ fn sendto(sock: @socket_handle, buf: [u8], to: sockaddr)
                  sys::size_of::<sockaddr4_in>()) }
       ipv6(s) { (unsafe::reinterpret_cast::<sockaddr6_in, sockaddr_storage>(s),
                  sys::size_of::<sockaddr6_in>()) }
+      unix(s) { (unsafe::reinterpret_cast::<sockaddr_basic, sockaddr_storage>(s),
+                 sys::size_of::<sockaddr_basic>()) }
     };
     let amt = c::sendto(**sock, vec::unsafe::to_ptr(buf), vec::len(buf) as ctypes::c_int, 0i32,
                         ptr::addr_of(to_saddr), to_len as ctypes::c_int);
@@ -220,7 +222,7 @@ fn recvfrom(sock: @socket_handle, len: uint)
     -> result::t<([u8], sockaddr), str> unsafe {
     let from_saddr = (0i16, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = 0i32;
-    let buf = vec::init_elt(0u8, len);
+    let buf = vec::init_elt(len, 0u8);
     let amt = c::recvfrom(**sock, vec::unsafe::to_ptr(buf), vec::len(buf) as ctypes::c_int, 0i32,
                           ptr::addr_of(from_saddr), ptr::addr_of(unused));
     if amt == -1_i32 {
