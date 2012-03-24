@@ -101,7 +101,7 @@ fn getaddrinfo(host: str, port: u16, f: fn(addrinfo) -> bool) unsafe {
             let status = c::getaddrinfo(host, port, ptr::addr_of(hints),
                                         ptr::addr_of(servinfo));
             if status != -1_i32 {
-                let p = servinfo;
+                let mut p = servinfo;
                 while p != ptr::null() {
                     if f(*p) {
                         break;
@@ -119,7 +119,7 @@ resource socket_handle(sockfd: libc::c_int) {
 }
 
 fn bind_socket(host: str, port: u16) -> result<@socket_handle, str> {
-    let fd = option::none;
+    let mut fd = option::none;
     getaddrinfo(host, port) {|ai|
         let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
         if sockfd != -1_i32 {
@@ -141,7 +141,7 @@ fn bind_socket(host: str, port: u16) -> result<@socket_handle, str> {
 }
 
 fn connect(host: str, port: u16) -> result<@socket_handle, str> {
-    let fd = option::none;
+    let mut fd = option::none;
     getaddrinfo(host, port) {|ai|
         let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
         if sockfd != -1_i32 {
