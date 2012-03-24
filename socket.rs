@@ -192,7 +192,7 @@ fn send(sock: @socket_handle, buf: [u8]) -> result<uint, str> unsafe {
 }
 
 fn recv(sock: @socket_handle, len: uint) -> result<[u8], str> unsafe {
-    let buf = vec::init_elt(len, 0u8);
+    let buf = vec::from_elem(len, 0u8);
     if c::recv(**sock, vec::unsafe::to_ptr(buf), len as libc::c_int, 0i32) == -1_i32 {
         result::err("recv failed")
     } else {
@@ -223,7 +223,7 @@ fn recvfrom(sock: @socket_handle, len: uint)
     -> result<([u8], sockaddr), str> unsafe {
     let from_saddr = (0i16, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = 0i32;
-    let buf = vec::init_elt(len, 0u8);
+    let buf = vec::from_elem(len, 0u8);
     let amt = c::recvfrom(**sock, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
                           ptr::addr_of(from_saddr), ptr::addr_of(unused));
     if amt == -1_i32 {
@@ -327,7 +327,7 @@ fn test_getaddrinfo_localhost() {
                 let p = *servinfo;
                 assert p.ai_next != ptr::null();
 
-                let ipstr = vec::init_elt(0u8, INET6_ADDRSTRLEN as uint);
+                let ipstr = vec::from_elem(INET6_ADDRSTRLEN as uint, 0u8);
                 c::inet_ntop(p.ai_family,
                              if p.ai_family == AF_INET {
                                  let addr: *sockaddr4_in = unsafe::reinterpret_cast(p.ai_addr);
