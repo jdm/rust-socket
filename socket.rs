@@ -1,3 +1,4 @@
+import result = result::result;
 import std::rand;
 
 export sockaddr, getaddrinfo, bind_socket, socket_handle, connect, listen, accept,
@@ -117,7 +118,7 @@ resource socket_handle(sockfd: libc::c_int) {
     c::close(sockfd);
 }
 
-fn bind_socket(host: str, port: u16) -> result::t<@socket_handle, str> {
+fn bind_socket(host: str, port: u16) -> result<@socket_handle, str> {
     let fd = option::none;
     getaddrinfo(host, port) {|ai|
         let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
@@ -139,7 +140,7 @@ fn bind_socket(host: str, port: u16) -> result::t<@socket_handle, str> {
     }
 }
 
-fn connect(host: str, port: u16) -> result::t<@socket_handle, str> {
+fn connect(host: str, port: u16) -> result<@socket_handle, str> {
     let fd = option::none;
     getaddrinfo(host, port) {|ai|
         let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
@@ -161,7 +162,7 @@ fn connect(host: str, port: u16) -> result::t<@socket_handle, str> {
     }   
 }
 
-fn listen(sock: @socket_handle, backlog: i32) -> result::t<@socket_handle, str> {
+fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, str> {
     if c::listen(**sock, backlog) == -1_i32 {
         result::err("listen failed")
     } else {
@@ -169,7 +170,7 @@ fn listen(sock: @socket_handle, backlog: i32) -> result::t<@socket_handle, str> 
     }
 }
 
-fn accept(sock: @socket_handle) -> result::t<@socket_handle, str> {
+fn accept(sock: @socket_handle) -> result<@socket_handle, str> {
     let addr = (0i16, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
     let fd = c::accept(**sock, ptr::addr_of(addr), ptr::addr_of(unused));
@@ -180,7 +181,7 @@ fn accept(sock: @socket_handle) -> result::t<@socket_handle, str> {
     }
 }
 
-fn send(sock: @socket_handle, buf: [u8]) -> result::t<uint, str> unsafe {
+fn send(sock: @socket_handle, buf: [u8]) -> result<uint, str> unsafe {
     let amt = c::send(**sock, vec::unsafe::to_ptr(buf),
                       vec::len(buf) as libc::c_int, 0i32);
     if amt == -1_i32 {
@@ -190,7 +191,7 @@ fn send(sock: @socket_handle, buf: [u8]) -> result::t<uint, str> unsafe {
     }
 }
 
-fn recv(sock: @socket_handle, len: uint) -> result::t<[u8], str> unsafe {
+fn recv(sock: @socket_handle, len: uint) -> result<[u8], str> unsafe {
     let buf = vec::init_elt(len, 0u8);
     if c::recv(**sock, vec::unsafe::to_ptr(buf), len as libc::c_int, 0i32) == -1_i32 {
         result::err("recv failed")
@@ -200,7 +201,7 @@ fn recv(sock: @socket_handle, len: uint) -> result::t<[u8], str> unsafe {
 }
 
 fn sendto(sock: @socket_handle, buf: [u8], to: sockaddr)
-    -> result::t<uint, str> unsafe {
+    -> result<uint, str> unsafe {
     let (to_saddr, to_len) = alt to {
       ipv4(s) { (unsafe::reinterpret_cast::<sockaddr4_in, sockaddr_storage>(s),
                  sys::size_of::<sockaddr4_in>()) }
@@ -219,7 +220,7 @@ fn sendto(sock: @socket_handle, buf: [u8], to: sockaddr)
 }
 
 fn recvfrom(sock: @socket_handle, len: uint)
-    -> result::t<([u8], sockaddr), str> unsafe {
+    -> result<([u8], sockaddr), str> unsafe {
     let from_saddr = (0i16, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = 0i32;
     let buf = vec::init_elt(len, 0u8);
@@ -239,7 +240,7 @@ fn recvfrom(sock: @socket_handle, len: uint)
 }
 
 fn setsockopt(sock: @socket_handle, option: int, value: int)
-    -> result::t<libc::c_int, str> unsafe {
+    -> result<libc::c_int, str> unsafe {
     let val = value;
     let r = c::setsockopt(**sock, SOL_SOCKET, option as libc::c_int,
                           unsafe::reinterpret_cast(ptr::addr_of(val)),
@@ -252,12 +253,12 @@ fn setsockopt(sock: @socket_handle, option: int, value: int)
 }
 
 fn enablesockopt(sock: @socket_handle, option: int)
-    -> result::t<libc::c_int, str> unsafe {
+    -> result<libc::c_int, str> unsafe {
     setsockopt(sock, option, 1)
 }
 
 fn disablesockopt(sock: @socket_handle, option: int)
-    -> result::t<libc::c_int, str> unsafe {
+    -> result<libc::c_int, str> unsafe {
     setsockopt(sock, option, 0)
 }
 
