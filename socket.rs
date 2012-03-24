@@ -9,64 +9,64 @@ export SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SO_REUSEADDR, SO_KEEPALIVE, SO_BROADCA
 
 #[nolink]
 native mod c {
-    fn socket(af: ctypes::c_int, typ: ctypes::c_int, protocol: ctypes::c_int) -> ctypes::c_int;
-    fn bind(s: ctypes::c_int, name: *sockaddr_storage, namelen: socklen_t) -> ctypes::c_int;
-    fn connect(s: ctypes::c_int, name: *sockaddr_storage, namelen: socklen_t) -> ctypes::c_int;
-    fn listen(s: ctypes::c_int, backlog: ctypes::c_int) -> ctypes::c_int;
-    fn accept(sockfd: ctypes::c_int, name: *sockaddr_storage, namelen: *socklen_t) -> ctypes::c_int;
-    fn send(sd: ctypes::c_int, buf: *u8, len: ctypes::c_int, flags: ctypes::c_int) -> ctypes::c_int;
-    fn recv(sd: ctypes::c_int, buf: *u8, len: ctypes::c_int, flags: ctypes::c_int) -> ctypes::c_int;
-    fn sendto(s: ctypes::c_int, msg: *u8, len: ctypes::c_int, flags: ctypes::c_int,
-              to: *sockaddr_storage, tolen: socklen_t) -> ctypes::c_int;
-    fn recvfrom(s: ctypes::c_int, msg: *u8, len: ctypes::c_int, flags: ctypes::c_int,
-                from: *sockaddr_storage, fromlen: *socklen_t) -> ctypes::c_int;
-    fn close(s: ctypes::c_int);
-    fn setsockopt(sockfd: ctypes::c_int, level: ctypes::c_int, optname: ctypes::c_int,
-                  optval: *u8, optlen: socklen_t) -> ctypes::c_int;
-    fn getsockopt(sockfd: ctypes::c_int, level: ctypes::c_int, optname: ctypes::c_int,
-                  optval: *u8, optlen: socklen_t) -> ctypes::c_int;
+    fn socket(af: libc::c_int, typ: libc::c_int, protocol: libc::c_int) -> libc::c_int;
+    fn bind(s: libc::c_int, name: *sockaddr_storage, namelen: socklen_t) -> libc::c_int;
+    fn connect(s: libc::c_int, name: *sockaddr_storage, namelen: socklen_t) -> libc::c_int;
+    fn listen(s: libc::c_int, backlog: libc::c_int) -> libc::c_int;
+    fn accept(sockfd: libc::c_int, name: *sockaddr_storage, namelen: *socklen_t) -> libc::c_int;
+    fn send(sd: libc::c_int, buf: *u8, len: libc::c_int, flags: libc::c_int) -> libc::c_int;
+    fn recv(sd: libc::c_int, buf: *u8, len: libc::c_int, flags: libc::c_int) -> libc::c_int;
+    fn sendto(s: libc::c_int, msg: *u8, len: libc::c_int, flags: libc::c_int,
+              to: *sockaddr_storage, tolen: socklen_t) -> libc::c_int;
+    fn recvfrom(s: libc::c_int, msg: *u8, len: libc::c_int, flags: libc::c_int,
+                from: *sockaddr_storage, fromlen: *socklen_t) -> libc::c_int;
+    fn close(s: libc::c_int);
+    fn setsockopt(sockfd: libc::c_int, level: libc::c_int, optname: libc::c_int,
+                  optval: *u8, optlen: socklen_t) -> libc::c_int;
+    fn getsockopt(sockfd: libc::c_int, level: libc::c_int, optname: libc::c_int,
+                  optval: *u8, optlen: socklen_t) -> libc::c_int;
 
     fn htons(hostshort: u16) -> u16;
     fn htonl(hostlong: u32) -> u32;
     fn ntohs(netshort: u16) -> u16;
     fn ntohl(netlong: u32) -> u32;
 
-    fn inet_ntop(af: ctypes::c_int, src: *ctypes::void, dst: *u8, size: socklen_t) -> *u8;
-    fn inet_pton(af: ctypes::c_int, src: *u8, dst: *ctypes::void) -> ctypes::c_int;
+    fn inet_ntop(af: libc::c_int, src: *libc::c_void, dst: *u8, size: socklen_t) -> *u8;
+    fn inet_pton(af: libc::c_int, src: *u8, dst: *libc::c_void) -> libc::c_int;
 
-    fn getaddrinfo(node: *u8, service: *u8, hints: *addrinfo, res: **addrinfo) -> ctypes::c_int;
+    fn getaddrinfo(node: *u8, service: *u8, hints: *addrinfo, res: **addrinfo) -> libc::c_int;
     fn freeaddrinfo(ai: *addrinfo);
 }
 
-const SOCK_STREAM: ctypes::c_int = 1_i32;
-const SOCK_DGRAM: ctypes::c_int = 2_i32;
-const SOCK_RAW: ctypes::c_int = 3_i32;
+const SOCK_STREAM: libc::c_int = 1_i32;
+const SOCK_DGRAM: libc::c_int = 2_i32;
+const SOCK_RAW: libc::c_int = 3_i32;
 
-const SOL_SOCKET: ctypes::c_int = 0xffff_i32;
+const SOL_SOCKET: libc::c_int = 0xffff_i32;
 
-const SO_REUSEADDR: ctypes::c_int = 0x0004_i32;
-const SO_KEEPALIVE: ctypes::c_int = 0x0008_i32;
-const SO_BROADCAST: ctypes::c_int = 0x0020_i32;
+const SO_REUSEADDR: libc::c_int = 0x0004_i32;
+const SO_KEEPALIVE: libc::c_int = 0x0008_i32;
+const SO_BROADCAST: libc::c_int = 0x0020_i32;
 
-const AF_UNSPEC: ctypes::c_int = 0_i32;
-const AF_UNIX: ctypes::c_int = 1_i32;
-const AF_INET: ctypes::c_int = 2_i32;
-const AF_INET6: ctypes::c_int = 30_i32;
+const AF_UNSPEC: libc::c_int = 0_i32;
+const AF_UNIX: libc::c_int = 1_i32;
+const AF_INET: libc::c_int = 2_i32;
+const AF_INET6: libc::c_int = 30_i32;
 
-const AI_PASSIVE: ctypes::c_int = 0x0001_i32;
-const AI_CANONNAME: ctypes::c_int = 0x0002_i32;
-const AI_NUMERICHOST: ctypes::c_int = 0x0004_i32;
-const AI_NUMERICSERV: ctypes::c_int = 0x1000_i32;
+const AI_PASSIVE: libc::c_int = 0x0001_i32;
+const AI_CANONNAME: libc::c_int = 0x0002_i32;
+const AI_NUMERICHOST: libc::c_int = 0x0004_i32;
+const AI_NUMERICSERV: libc::c_int = 0x1000_i32;
 
-const INET6_ADDRSTRLEN: ctypes::c_int = 46_i32;
+const INET6_ADDRSTRLEN: libc::c_int = 46_i32;
 
-type socklen_t = ctypes::c_int;
+type socklen_t = libc::c_int;
 type x = u8;
 type sockaddr_storage = (i16, x, x, x, x, x, x, x, x, x, x, x, x, x, x); //XXX this is not big enough
 type sockaddr_basic = {sin_family: i16};
 type sockaddr4_in = {sin_family: i16, sin_port: u16, sin_addr: in4_addr,
                      sin_zero: (x, x, x, x, x, x, x, x)};
-type in4_addr = {s_addr: ctypes::ulong};
+type in4_addr = {s_addr: libc::c_ulong};
 type sockaddr6_in = {sin6_family: u16, sin6_port: u16, sin6_flowinfo: u32, sin6_addr: in6_addr, sin6_scope_id: u32};
 type in6_addr = {s6_addr: (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)};
 
@@ -76,10 +76,10 @@ enum sockaddr {
     ipv6(sockaddr6_in)
 }
 
-type addrinfo = {ai_flags: ctypes::c_int,
-                 ai_family: ctypes::c_int,
-                 ai_socktype: ctypes::c_int,
-                 ai_protocol: ctypes::c_int,
+type addrinfo = {ai_flags: libc::c_int,
+                 ai_family: libc::c_int,
+                 ai_socktype: libc::c_int,
+                 ai_protocol: libc::c_int,
                  ai_addrlen: socklen_t,
                  ai_canonname: *u8,
                  ai_addr: *sockaddr_storage,
@@ -113,7 +113,7 @@ fn getaddrinfo(host: str, port: u16, f: fn(addrinfo) -> bool) unsafe {
     c::freeaddrinfo(servinfo);
 }
 
-resource socket_handle(sockfd: ctypes::c_int) {
+resource socket_handle(sockfd: libc::c_int) {
     c::close(sockfd);
 }
 
@@ -182,7 +182,7 @@ fn accept(sock: @socket_handle) -> result::t<@socket_handle, str> {
 
 fn send(sock: @socket_handle, buf: [u8]) -> result::t<uint, str> unsafe {
     let amt = c::send(**sock, vec::unsafe::to_ptr(buf),
-                      vec::len(buf) as ctypes::c_int, 0i32);
+                      vec::len(buf) as libc::c_int, 0i32);
     if amt == -1_i32 {
         result::err("send failed")
     } else {
@@ -192,7 +192,7 @@ fn send(sock: @socket_handle, buf: [u8]) -> result::t<uint, str> unsafe {
 
 fn recv(sock: @socket_handle, len: uint) -> result::t<[u8], str> unsafe {
     let buf = vec::init_elt(len, 0u8);
-    if c::recv(**sock, vec::unsafe::to_ptr(buf), len as ctypes::c_int, 0i32) == -1_i32 {
+    if c::recv(**sock, vec::unsafe::to_ptr(buf), len as libc::c_int, 0i32) == -1_i32 {
         result::err("recv failed")
     } else {
         result::ok(buf)
@@ -209,8 +209,8 @@ fn sendto(sock: @socket_handle, buf: [u8], to: sockaddr)
       unix(s) { (unsafe::reinterpret_cast::<sockaddr_basic, sockaddr_storage>(s),
                  sys::size_of::<sockaddr_basic>()) }
     };
-    let amt = c::sendto(**sock, vec::unsafe::to_ptr(buf), vec::len(buf) as ctypes::c_int, 0i32,
-                        ptr::addr_of(to_saddr), to_len as ctypes::c_int);
+    let amt = c::sendto(**sock, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
+                        ptr::addr_of(to_saddr), to_len as libc::c_int);
     if amt == -1_i32 {
         result::err("sendto failed")
     } else {
@@ -223,7 +223,7 @@ fn recvfrom(sock: @socket_handle, len: uint)
     let from_saddr = (0i16, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = 0i32;
     let buf = vec::init_elt(len, 0u8);
-    let amt = c::recvfrom(**sock, vec::unsafe::to_ptr(buf), vec::len(buf) as ctypes::c_int, 0i32,
+    let amt = c::recvfrom(**sock, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
                           ptr::addr_of(from_saddr), ptr::addr_of(unused));
     if amt == -1_i32 {
         result::err("recvfrom failed")
@@ -239,9 +239,9 @@ fn recvfrom(sock: @socket_handle, len: uint)
 }
 
 fn setsockopt(sock: @socket_handle, option: int, value: int)
-    -> result::t<ctypes::c_int, str> unsafe {
+    -> result::t<libc::c_int, str> unsafe {
     let val = value;
-    let r = c::setsockopt(**sock, SOL_SOCKET, option as ctypes::c_int,
+    let r = c::setsockopt(**sock, SOL_SOCKET, option as libc::c_int,
                           unsafe::reinterpret_cast(ptr::addr_of(val)),
                           sys::size_of::<int>() as socklen_t);
     if r == -1_i32 {
@@ -252,12 +252,12 @@ fn setsockopt(sock: @socket_handle, option: int, value: int)
 }
 
 fn enablesockopt(sock: @socket_handle, option: int)
-    -> result::t<ctypes::c_int, str> unsafe {
+    -> result::t<libc::c_int, str> unsafe {
     setsockopt(sock, option, 1)
 }
 
 fn disablesockopt(sock: @socket_handle, option: int)
-    -> result::t<ctypes::c_int, str> unsafe {
+    -> result::t<libc::c_int, str> unsafe {
     setsockopt(sock, option, 0)
 }
 
