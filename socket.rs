@@ -125,12 +125,13 @@ fn bind_socket(host: str, port: u16) -> result<@socket_handle, str> {
         if sockfd != -1_i32 {
             if c::bind(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
                 c::close(sockfd);
-                ret false;
+                false
+            } else {
+                fd = option::some(sockfd);
+                true
             }
-            fd = option::some(sockfd);
-            ret true;
         } else {
-            ret false;
+            false
         }
     }
     if option::is_some(fd) {
@@ -147,12 +148,13 @@ fn connect(host: str, port: u16) -> result<@socket_handle, str> {
         if sockfd != -1_i32 {
             if c::connect(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
                 c::close(sockfd);
-                ret false;
+                false
+            } else {
+                fd = option::some(sockfd);
+                true
             }
-            fd = option::some(sockfd);
-            ret true;
         } else {
-            ret false;
+            false
         }
     }
     if option::is_some(fd) {
