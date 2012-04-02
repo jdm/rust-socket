@@ -283,9 +283,12 @@ fn ntohl(netlong: u32) -> u32 {
 #[test]
 fn test_server_client() {
     let mut port = 0u32;
+    let mut count = 0;
     let rng = rand::rng();
     while (port < 1024u32 || port > 65535u32) {
-        port = rng.next();
+        port = rng.next() % 65535u32;
+        count += 1;
+        assert count < 100;
     }
     let test_str = "testing";
 
@@ -340,7 +343,7 @@ fn test_getaddrinfo_localhost() {
                              },
                              vec::unsafe::to_ptr(ipstr), INET6_ADDRSTRLEN);
                 let val = str::split_char(str::from_bytes(ipstr), 0 as char)[0];
-                assert str::eq("127.0.0.1", val)
+                assert str::eq("127.0.0.1", val) || str::eq("::1", val)
             }
             c::freeaddrinfo(servinfo)
         }
