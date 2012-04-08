@@ -161,7 +161,7 @@ fn connect(host: str, port: u16) -> result<@socket_handle, str> {
         result::ok(@socket_handle(option::get(fd)))
     } else {
         result::err("connect failed")
-    }   
+    }
 }
 
 fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, str> {
@@ -231,7 +231,7 @@ fn recvfrom(sock: @socket_handle, len: uint)
     if amt == -1_i32 {
         result::err("recvfrom failed")
     } else {
-        let (family, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = from_saddr; 
+        let (family, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = from_saddr;
         result::ok((buf,
                    if family == AF_INET as i16 {
                        ipv4(unsafe::reinterpret_cast(from_saddr))
@@ -298,20 +298,20 @@ fn test_server_client() {
             task::spawn {||
                 result::chain(connect("localhost", port as u16)) {|s|
                     let res = send(s, str::bytes(test_str));
-                    assert result::success(res);
+                    assert result::is_success(res);
                     result::ok(s)
                 };
             };
 
             result::chain(accept(s)) {|c|
                 let res = recv(c, str::len(test_str));
-                assert result::success(res);
+                assert result::is_success(res);
                 assert result::get(res) == str::bytes(test_str);
                 result::ok(c)
             }
         }
     };
-    assert result::success(r);
+    assert result::is_success(r);
 }
 
 #[test]
