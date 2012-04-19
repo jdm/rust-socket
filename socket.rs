@@ -3,7 +3,8 @@ import std::rand;
 
 export sockaddr, getaddrinfo, bind_socket, socket_handle, connect, listen, accept,
        send, recv, sendto, recvfrom, setsockopt, enablesockopt, disablesockopt,
-       htons, htonl, ntohs, ntohl, sockaddr4_in, sockaddr6_in, sockaddr_basic;
+       htons, htonl, ntohs, ntohl, sockaddr4_in, sockaddr6_in, sockaddr_basic,
+       sockaddr_storage;
 export SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SO_REUSEADDR, SO_KEEPALIVE, SO_BROADCAST,
        AF_UNSPEC, AF_UNIX, AF_INET, AF_INET6, AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST,
        AI_NUMERICSERV, INET6_ADDRSTRLEN;
@@ -77,6 +78,9 @@ enum sockaddr {
     ipv6(sockaddr6_in)
 }
 
+#[cfg(target_os = "freebsd")]
+#[cfg(target_os = "win32")]
+#[cfg(target_os = "macos")]
 type addrinfo = {ai_flags: libc::c_int,
                  ai_family: libc::c_int,
                  ai_socktype: libc::c_int,
@@ -85,10 +89,28 @@ type addrinfo = {ai_flags: libc::c_int,
                  ai_canonname: *u8,
                  ai_addr: *sockaddr_storage,
                  ai_next: *u8}; //XXX ai_next should be *addrinfo
+#[cfg(target_os = "linux")]
+type addrinfo = {ai_flags: libc::c_int,
+                 ai_family: libc::c_int,
+                 ai_socktype: libc::c_int,
+                 ai_protocol: libc::c_int,
+                 ai_addrlen: socklen_t,
+                 ai_addr: *sockaddr_storage,
+                 ai_canonname: *u8,
+                 ai_next: *u8}; //XXX ai_next should be *addrinfo
 
+#[cfg(target_os = "freebsd")]
+#[cfg(target_os = "win32")]
+#[cfg(target_os = "macos")]
 fn mk_default_addrinfo() -> addrinfo {
     {ai_flags: 0i32, ai_family: 0i32, ai_socktype: 0i32, ai_protocol: 0i32, ai_addrlen: 0i32,
      ai_canonname: ptr::null(), ai_addr: ptr::null(), ai_next: ptr::null()}
+}
+
+#[cfg(target_os = "linux")]
+fn mk_default_addrinfo() -> addrinfo {
+    {ai_flags: 0i32, ai_family: 0i32, ai_socktype: 0i32, ai_protocol: 0i32, ai_addrlen: 0i32,
+     ai_addr: ptr::null(), ai_canonname: ptr::null(), ai_next: ptr::null()}
 }
 
 fn getaddrinfo(host: str, port: u16, f: fn(addrinfo) -> bool) unsafe {

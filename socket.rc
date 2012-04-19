@@ -8,4 +8,3 @@
 #[crate_type = "lib"];
 
 use std;
-mod socket;
