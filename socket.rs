@@ -8,6 +8,8 @@ export sockaddr, getaddrinfo, bind_socket, socket_handle, connect, listen, accep
 export SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SO_REUSEADDR, SO_KEEPALIVE, SO_BROADCAST,
        AF_UNSPEC, AF_UNIX, AF_INET, AF_INET6, AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST,
        AI_NUMERICSERV, INET6_ADDRSTRLEN;
+       
+type c_str = *libc::c_char;
 
 #[nolink]
 native mod c {
@@ -33,10 +35,10 @@ native mod c {
     fn ntohs(netshort: u16) -> u16;
     fn ntohl(netlong: u32) -> u32;
 
-    fn inet_ntop(af: libc::c_int, src: *libc::c_void, dst: *u8, size: socklen_t) -> *u8;
-    fn inet_pton(af: libc::c_int, src: *u8, dst: *libc::c_void) -> libc::c_int;
+    fn inet_ntop(af: libc::c_int, src: *libc::c_void, dst: *u8, size: socklen_t) -> c_str;
+    fn inet_pton(af: libc::c_int, src: c_str, dst: *libc::c_void) -> libc::c_int;
 
-    fn getaddrinfo(node: *u8, service: *u8, hints: *addrinfo, res: **addrinfo) -> libc::c_int;
+    fn getaddrinfo(node: c_str, service: c_str, hints: *addrinfo, res: **addrinfo) -> libc::c_int;
     fn freeaddrinfo(ai: *addrinfo);
 }
 
@@ -118,8 +120,8 @@ fn getaddrinfo(host: str, port: u16, f: fn(addrinfo) -> bool) unsafe {
                  with mk_default_addrinfo()};
     let servinfo: *addrinfo = ptr::null();
     let s_port = #fmt["%u", port as uint];
-    str::as_buf(host) {|host|
-        str::as_buf(s_port) {|port|
+    str::as_c_str(host) {|host|
+        str::as_c_str(s_port) {|port|
             let status = c::getaddrinfo(host, port, ptr::addr_of(hints),
                                         ptr::addr_of(servinfo));
             if status != -1_i32 {
@@ -348,8 +350,8 @@ fn test_getaddrinfo_localhost() {
     let hints = {ai_family: AF_UNSPEC, ai_socktype: SOCK_STREAM with mk_default_addrinfo()};
     let servinfo: *addrinfo = ptr::null();
     let port = get_random_port();
-    str::as_buf("localhost") {|host|
-        str::as_buf(#fmt["%u", port as uint]) {|p|
+    str::as_c_str("localhost") {|host|
+        str::as_c_str(#fmt["%u", port as uint]) {|p|
             let status = c::getaddrinfo(host, p, ptr::addr_of(hints), ptr::addr_of(servinfo));
             assert status == 0_i32;
             unsafe {
