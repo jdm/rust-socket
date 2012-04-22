@@ -4,7 +4,7 @@ import std::rand;
 export sockaddr, getaddrinfo, bind_socket, socket_handle, connect, listen, accept,
        send, recv, sendto, recvfrom, setsockopt, enablesockopt, disablesockopt,
        htons, htonl, ntohs, ntohl, sockaddr4_in, sockaddr6_in, sockaddr_basic,
-       sockaddr_storage;
+       sockaddr_storage, inet_ntop;
 export SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SO_REUSEADDR, SO_KEEPALIVE, SO_BROADCAST,
        AF_UNSPEC, AF_UNIX, AF_INET, AF_INET6, AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST,
        AI_NUMERICSERV, INET6_ADDRSTRLEN;
@@ -35,9 +35,10 @@ native mod c {
     fn ntohs(netshort: u16) -> u16;
     fn ntohl(netlong: u32) -> u32;
 
-    fn inet_ntop(af: libc::c_int, src: *libc::c_void, dst: *u8, size: socklen_t) -> c_str;
+    fn inet_ntop(af: libc::c_int, src: *libc::c_void, dst: c_str, size: socklen_t) -> c_str;
     fn inet_pton(af: libc::c_int, src: c_str, dst: *libc::c_void) -> libc::c_int;
 
+    fn gai_strerror(ecode: libc::c_int) -> c_str;
     fn getaddrinfo(node: c_str, service: c_str, hints: *addrinfo, res: **addrinfo) -> libc::c_int;
     fn freeaddrinfo(ai: *addrinfo);
 }
@@ -115,76 +116,90 @@ fn mk_default_addrinfo() -> addrinfo {
      ai_addr: ptr::null(), ai_canonname: ptr::null(), ai_next: ptr::null()}
 }
 
-fn getaddrinfo(host: str, port: u16, f: fn(addrinfo) -> bool) unsafe {
+fn getaddrinfo(host: str, port: u16, f: fn(addrinfo) -> bool) -> option<str> unsafe {
     let hints = {ai_family: AF_UNSPEC, ai_socktype: SOCK_STREAM
                  with mk_default_addrinfo()};
     let servinfo: *addrinfo = ptr::null();
     let s_port = #fmt["%u", port as uint];
+    let mut result = option::none;
     str::as_c_str(host) {|host|
         str::as_c_str(s_port) {|port|
             let status = c::getaddrinfo(host, port, ptr::addr_of(hints),
                                         ptr::addr_of(servinfo));
-            if status != -1_i32 {
+            if status == 0i32 {
                 let mut p = servinfo;
                 while p != ptr::null() {
-                    if f(*p) {
+                    if !f(*p) {
                         break;
                     }
                     p = unsafe::reinterpret_cast((*p).ai_next);
                 }
+            } else {
+                result = option::some("getaddrinfo " + str::unsafe::from_c_str(c::gai_strerror(status)));
             }
         }
     }
     c::freeaddrinfo(servinfo);
+    result
 }
 
+fn inet_ntop(address: addrinfo) -> str unsafe {
+    let ipstr = str::from_bytes(vec::from_elem(INET6_ADDRSTRLEN as uint, 0u8));
+    str::as_c_str(ipstr){|buffer|
+        c::inet_ntop(address.ai_family,
+        if address.ai_family == AF_INET {
+            let addr: *sockaddr4_in = unsafe::reinterpret_cast(address.ai_addr);
+            unsafe::reinterpret_cast(ptr::addr_of((*addr).sin_addr))
+        } else {
+            let addr: *sockaddr6_in = unsafe::reinterpret_cast(address.ai_addr);
+            unsafe::reinterpret_cast(ptr::addr_of((*addr).sin6_addr))
+        },
+        buffer, INET6_ADDRSTRLEN)};
+    ipstr
+}
 resource socket_handle(sockfd: libc::c_int) {
     c::close(sockfd);
 }
 
 fn bind_socket(host: str, port: u16) -> result<@socket_handle, str> {
-    let mut fd = option::none;
-    getaddrinfo(host, port) {|ai|
+    #info["binding to %s:%?", host, port];
+    let err = for getaddrinfo(host, port) {|ai|
+        #debug["   trying %s", inet_ntop(ai)];
         let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
         if sockfd != -1_i32 {
             if c::bind(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
                 c::close(sockfd);
-                false
             } else {
-                fd = option::some(sockfd);
-                true
+                #debug["   bound to socket %?", sockfd];
+                ret result::ok(@socket_handle(sockfd));
             }
-        } else {
-            false
         }
-    }
-    if option::is_some(fd) {
-        result::ok(@socket_handle(option::get(fd)))
-    } else {
-        result::err("bind failed")
+    };
+    alt err
+    {
+    	    option::some(mesg) {result::err(mesg)}
+         option::none           {result::err("bind failed to find an address")}
     }
 }
 
 fn connect(host: str, port: u16) -> result<@socket_handle, str> {
-    let mut fd = option::none;
-    getaddrinfo(host, port) {|ai|
+    #info["connecting to %s:%?", host, port];
+    let err = for getaddrinfo(host, port) {|ai|
+        #debug["   trying %s", inet_ntop(ai)];
         let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
         if sockfd != -1_i32 {
             if c::connect(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
                 c::close(sockfd);
-                false
             } else {
-                fd = option::some(sockfd);
-                true
+                #debug["   connected to socket %?", sockfd];
+                ret result::ok(@socket_handle(sockfd));
             }
-        } else {
-            false
         }
-    }
-    if option::is_some(fd) {
-        result::ok(@socket_handle(option::get(fd)))
-    } else {
-        result::err("connect failed")
+    };
+    alt err
+    {
+    	    option::some(mesg) {result::err(mesg)}
+         option::none           {result::err("connect failed to find an address")}
     }
 }
 
@@ -197,6 +212,7 @@ fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, str> {
 }
 
 fn accept(sock: @socket_handle) -> result<@socket_handle, str> {
+    #info["accepting with socket %?", **sock];
     let addr = (0i16, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
     let fd = c::accept(**sock, ptr::addr_of(addr), ptr::addr_of(unused));
@@ -307,7 +323,7 @@ fn ntohl(netlong: u32) -> u32 {
 #[cfg(test)]
 fn get_random_port() -> u32
 {
-	let mut port = 0u32;
+    let mut port = 0u32;
     let rng = rand::rng();
     let mut count = 0;
     while (port < 1024u32 || port > 65535u32) {
@@ -320,6 +336,7 @@ fn get_random_port() -> u32
 
 #[test]
 fn test_server_client() {
+    #info["---- test_server_client ------------------------"];
     let port = get_random_port();
     let test_str = "testing";
 
@@ -347,6 +364,7 @@ fn test_server_client() {
 
 #[test]
 fn test_getaddrinfo_localhost() {
+    #info["---- test_getaddrinfo_localhost ------------------------"];
     let hints = {ai_family: AF_UNSPEC, ai_socktype: SOCK_STREAM with mk_default_addrinfo()};
     let servinfo: *addrinfo = ptr::null();
     let port = get_random_port();
@@ -359,17 +377,8 @@ fn test_getaddrinfo_localhost() {
                 let p = *servinfo;
                 assert p.ai_next != ptr::null();
 
-                let ipstr = vec::from_elem(INET6_ADDRSTRLEN as uint, 0u8);
-                c::inet_ntop(p.ai_family,
-                             if p.ai_family == AF_INET {
-                                 let addr: *sockaddr4_in = unsafe::reinterpret_cast(p.ai_addr);
-                                 unsafe::reinterpret_cast(ptr::addr_of((*addr).sin_addr))
-                             } else {
-                                 let addr: *sockaddr6_in = unsafe::reinterpret_cast(p.ai_addr);
-                                 unsafe::reinterpret_cast(ptr::addr_of((*addr).sin6_addr))
-                             },
-                             vec::unsafe::to_ptr(ipstr), INET6_ADDRSTRLEN);
-                let val = str::split_char(str::from_bytes(ipstr), 0 as char)[0];
+                let ipstr = inet_ntop(p);
+                let val = str::split_char(ipstr, 0 as char)[0];
                 assert str::eq("127.0.0.1", val) || str::eq("::1", val)
             }
             c::freeaddrinfo(servinfo)
