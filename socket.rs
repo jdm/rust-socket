@@ -394,9 +394,11 @@ fn test_server_client() {
 
             // server
             result::chain(accept(s)) {|c|
-                let res = recv(c, str::len(test_str));
+                let res = recv(c, 1024u);
                 assert result::is_success(res);
-                assert result::get(res) == (str::bytes(test_str), str::len(test_str));
+                let (buffer, len) = result::get(res);
+                assert len == str::len(test_str);
+                assert vec::slice(buffer, 0u, len) == str::bytes(test_str);
                 result::ok(c)
             }
         }
