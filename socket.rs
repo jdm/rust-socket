@@ -282,13 +282,14 @@ fn send(sock: @socket_handle, buf: [u8]) -> result<uint, str> unsafe {
     }
 }
 
-fn recv(sock: @socket_handle, len: uint) -> result<[u8], str> unsafe {
+fn recv(sock: @socket_handle, len: uint) -> result<([u8], uint), str> unsafe {
     let buf = vec::from_elem(len, 0u8);
-    if c::recv(**sock, vec::unsafe::to_ptr(buf), len as libc::c_int, 0i32) == -1_i32 {
+    let bytes = c::recv(**sock, vec::unsafe::to_ptr(buf), len as libc::c_int, 0i32);
+    if bytes == -1_i32 {
         log_err(#fmt["recv error"]);
         result::err("recv failed")
     } else {
-        result::ok(buf)
+        result::ok((buf, bytes as uint))
     }
 }
 
@@ -395,7 +396,7 @@ fn test_server_client() {
             result::chain(accept(s)) {|c|
                 let res = recv(c, str::len(test_str));
                 assert result::is_success(res);
-                assert result::get(res) == str::bytes(test_str);
+                assert result::get(res) == (str::bytes(test_str), str::len(test_str));
                 result::ok(c)
             }
         }
