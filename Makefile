@@ -3,7 +3,7 @@ all:
 
 test:
 	rustc --test socket.rc -g
-	export RUST_LOG=socket=1 && $(DEBUGGER) ./socket
+	export RUST_LOG=socket=3 && $(DEBUGGER) ./socket
 
 clean:
 	rm -rf libsocket-*
