@@ -302,16 +302,23 @@ fn ntohl(netlong: u32) -> u32 {
     c::ntohl(netlong)
 }
 
-#[test]
-fn test_server_client() {
-    let mut port = 0u32;
-    let mut count = 0;
+#[cfg(test)]
+fn get_random_port() -> u32
+{
+	let mut port = 0u32;
     let rng = rand::rng();
+    let mut count = 0;
     while (port < 1024u32 || port > 65535u32) {
         port = rng.next() % 65535u32;
         count += 1;
         assert count < 100;
     }
+    ret port;
+}
+
+#[test]
+fn test_server_client() {
+    let port = get_random_port();
     let test_str = "testing";
 
     let r = result::chain(bind_socket("localhost", port as u16)) {|s|
@@ -340,11 +347,7 @@ fn test_server_client() {
 fn test_getaddrinfo_localhost() {
     let hints = {ai_family: AF_UNSPEC, ai_socktype: SOCK_STREAM with mk_default_addrinfo()};
     let servinfo: *addrinfo = ptr::null();
-    let mut port = 0u32;
-    let rng = rand::rng();
-    while (port < 1024u32 || port > 65535u32) {
-        port = rng.next();
-    }
+    let port = get_random_port();
     str::as_buf("localhost") {|host|
         str::as_buf(#fmt["%u", port as uint]) {|p|
             let status = c::getaddrinfo(host, p, ptr::addr_of(hints), ptr::addr_of(servinfo));
