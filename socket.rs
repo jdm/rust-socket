@@ -234,7 +234,7 @@ fn connect(host: str, port: u16) -> result<@socket_handle, str> {
             if c::connect(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
                 c::close(sockfd);
             } else {
-                #debug["   connected to socket %?", sockfd];
+                #info["   connected to socket %?", sockfd];
                 ret result::ok(@socket_handle(sockfd));
             }
         } else {
@@ -266,6 +266,7 @@ fn accept(sock: @socket_handle) -> result<@socket_handle, str> {
         log_err(#fmt["accept error"]);
         result::err("accept failed")
     } else {
+        #info["accepted socket %?", fd];
         result::ok(@socket_handle(fd))
     }
 }
@@ -381,6 +382,7 @@ fn test_server_client() {
     let r = result::chain(bind_socket("localhost", port as u16)) {|s|
         result::chain(listen(s, 1i32)) {|s|
 
+            // client
             task::spawn {||
                 result::chain(connect("localhost", port as u16)) {|s|
                     let res = send(s, str::bytes(test_str));
@@ -389,6 +391,7 @@ fn test_server_client() {
                 };
             };
 
+            // server
             result::chain(accept(s)) {|c|
                 let res = recv(c, str::len(test_str));
                 assert result::is_success(res);
