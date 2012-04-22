@@ -195,6 +195,7 @@ fn log_err(mesg: str)
     str::as_c_str(mesg) {|buffer| libc::perror(buffer)};
 }
 
+// TODO: Isn't socket::socket_handle redundant?
 resource socket_handle(sockfd: libc::c_int) {
     c::close(sockfd);
 }
