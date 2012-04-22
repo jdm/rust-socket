@@ -5,7 +5,9 @@ export sockaddr, getaddrinfo, bind_socket, socket_handle, connect, listen, accep
        send, recv, sendto, recvfrom, setsockopt, enablesockopt, disablesockopt,
        htons, htonl, ntohs, ntohl, sockaddr4_in, sockaddr6_in, sockaddr_basic,
        sockaddr_storage, inet_ntop;
-export SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SO_REUSEADDR, SO_KEEPALIVE, SO_BROADCAST,
+export SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SO_DEBUG, SO_ACCEPTCONN, SO_REUSEADDR, 
+       SO_KEEPALIVE, SO_DONTROUTE, SO_BROADCAST, SO_LINGER, SO_OOBINLINE, SO_SNDBUF, 
+       SO_RCVBUF, SO_SNDLOWAT, SO_RCVLOWAT, SO_SNDTIMEO, SO_RCVTIMEO, SO_ERROR, SO_TYPE,
        AF_UNSPEC, AF_UNIX, AF_INET, AF_INET6, AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST,
        AI_NUMERICSERV, INET6_ADDRSTRLEN;
        
@@ -49,9 +51,23 @@ const SOCK_RAW: libc::c_int = 3_i32;
 
 const SOL_SOCKET: libc::c_int = 0xffff_i32;
 
-const SO_REUSEADDR: libc::c_int = 0x0004_i32;
-const SO_KEEPALIVE: libc::c_int = 0x0008_i32;
-const SO_BROADCAST: libc::c_int = 0x0020_i32;
+const SO_DEBUG: libc::c_int = 0x0001_i32;             // turn on debugging info recording
+const SO_ACCEPTCONN: libc::c_int = 0x0002_i32;   // socket has had listen()
+const SO_REUSEADDR: libc::c_int = 0x0004_i32;   // allow local address reuse
+const SO_KEEPALIVE: libc::c_int = 0x0008_i32;   // keep connections alive
+const SO_DONTROUTE: libc::c_int = 0x0010_i32;   // just use interface addresses
+const SO_BROADCAST: libc::c_int = 0x0020_i32;   // permit sending of broadcast msgs
+const SO_LINGER: libc::c_int = 0x1080_i32;   // linger on close if data present (in seconds)
+const SO_OOBINLINE: libc::c_int = 0x0100_i32;   // leave received OOB data in line
+const SO_SNDBUF: libc::c_int = 0x1001_i32;   // send buffer size
+const SO_RCVBUF: libc::c_int = 0x1002_i32;   // receive buffer size
+const SO_SNDLOWAT: libc::c_int = 0x1003_i32;   // send low-water mark
+const SO_RCVLOWAT: libc::c_int = 0x1004_i32;   // receive low-water mark
+const SO_SNDTIMEO: libc::c_int = 0x1005_i32;   // send timeout
+const SO_RCVTIMEO: libc::c_int = 0x1006_i32;   // receive timeout
+const SO_ERROR: libc::c_int = 0x1007_i32;   // get error status and clear
+const SO_TYPE	: libc::c_int = 0x1008_i32;   // get socket type
+// TODO: there are a bunch of Linux specific socket options that should be added
 
 const AF_UNSPEC: libc::c_int = 0_i32;
 const AF_UNIX: libc::c_int = 1_i32;
