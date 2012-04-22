@@ -203,6 +203,11 @@ fn bind_socket(host: str, port: u16) -> result<@socket_handle, str> unsafe {
     let err = for getaddrinfo(host, port) {|ai|
         let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
         if sockfd != -1_i32 {
+            let val = 1;
+            let _ = c::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,    // this shouldn't be critical so we'll ignore errors from it
+                                  unsafe::reinterpret_cast(ptr::addr_of(val)),
+                                  sys::size_of::<int>() as socklen_t);
+            
             if c::bind(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
                 c::close(sockfd);
             } else {
@@ -367,24 +372,10 @@ fn ntohl(netlong: u32) -> u32 {
     c::ntohl(netlong)
 }
 
-#[cfg(test)]
-fn get_random_port() -> u32
-{
-    let mut port = 0u32;
-    let rng = rand::rng();
-    let mut count = 0;
-    while (port < 1024u32 || port > 65535u32) {
-        port = rng.next() % 65535u32;
-        count += 1;
-        assert count < 100;
-    }
-    ret port;
-}
-
 #[test]
 fn test_server_client() {
     #info["---- test_server_client ------------------------"];
-    let port = get_random_port();
+    let port = 48006u16;
     let test_str = "testing";
 
     let r = result::chain(bind_socket("localhost", port as u16)) {|s|
@@ -414,7 +405,7 @@ fn test_getaddrinfo_localhost() {
     #info["---- test_getaddrinfo_localhost ------------------------"];
     let hints = {ai_family: AF_UNSPEC, ai_socktype: SOCK_STREAM with mk_default_addrinfo()};
     let servinfo: *addrinfo = ptr::null();
-    let port = get_random_port();
+    let port = 48007u16;
     str::as_c_str("localhost") {|host|
         str::as_c_str(#fmt["%u", port as uint]) {|p|
             let status = c::getaddrinfo(host, p, ptr::addr_of(hints), ptr::addr_of(servinfo));
