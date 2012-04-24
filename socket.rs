@@ -172,20 +172,8 @@ fn inet_ntop(address: addrinfo) -> str unsafe {
         },
         vec::unsafe::to_ptr(buffer), INET6_ADDRSTRLEN);
     
-    // In general the result will be shorter than INET6_ADDRSTRLEN. Unfortunately
-    // str::from_bytes doesn't handle this case very well which causes problems if
-    // we want to use the string with C (e.g. with perror). See #2268.
-    alt vec::position(buffer, {|c| c == 0u8})
-    {
-        option::some(i)
-        {
-            str::from_bytes(vec::slice(buffer, 0u, i))
-        }
-        option::none
-        {
-            str::from_bytes(buffer)
-        }
-    }
+    // Note that the unsafe from_bytes stops at null characters (and the safe version does not).
+    str::unsafe::from_bytes(buffer)
 }
 
 // TODO: there is no portable way to get errno from rust so, for now, we'll just write them to stderr
@@ -258,7 +246,8 @@ fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, str> {
     }
 }
 
-fn accept(sock: @socket_handle) -> result<@socket_handle, str> {
+// Returns a fd to allow multi-threaded servers to send the fd to a task.
+fn accept(sock: @socket_handle) -> result<libc::c_int, str> {
     #info["accepting with socket %?", **sock];
     let addr = (0i16, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
@@ -268,7 +257,7 @@ fn accept(sock: @socket_handle) -> result<@socket_handle, str> {
         result::err("accept failed")
     } else {
         #info["accepted socket %?", fd];
-        result::ok(@socket_handle(fd))
+        result::ok(fd)
     }
 }
 
@@ -394,7 +383,8 @@ fn test_server_client() {
             };
 
             // server
-            result::chain(accept(s)) {|c|
+            result::chain(accept(s)) {|fd|
+                let c = @socket_handle(fd);
                 let res = recv(c, 1024u);
                 assert result::is_success(res);
                 let (buffer, len) = result::get(res);
