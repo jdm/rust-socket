@@ -1,5 +1,4 @@
-*dylib*
-socket
 *.dSYM
+*.dylib
+socket
 *.swp
-
