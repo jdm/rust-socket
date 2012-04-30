@@ -352,7 +352,6 @@ fn test_getaddrinfo_localhost() {
             unsafe {
                 assert servinfo != ptr::null();
                 let p = *servinfo;
-                assert p.ai_next != ptr::null();
 
                 let ipstr = vec::from_elem(INET6_ADDRSTRLEN as uint, 0u8);
                 c::inet_ntop(p.ai_family,
@@ -370,4 +369,16 @@ fn test_getaddrinfo_localhost() {
             c::freeaddrinfo(servinfo)
         }
     };
+}
+
+#[test]
+fn test_socket_bind() {
+    let fd = c::socket(AF_INET, SOCK_STREAM, 0 as libc::c_int);
+    let addr = {
+        sin_family: AF_INET as i16,
+        sin_addr: {s_addr: htonl( 0u32 )},
+        sin_port: htons( 8088u16 ),
+        sin_zero: (0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8)};
+    let res = c::bind(fd, ptr::addr_of(addr) as *sockaddr_storage, sys::size_of::<sockaddr4_in>() as socklen_t);
+    assert res != -1 as libc::c_int;
 }
