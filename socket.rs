@@ -161,7 +161,7 @@ fn getaddrinfo(host: str, port: u16, f: fn(addrinfo) -> bool) -> option<str> uns
 }
 
 fn inet_ntop(address: addrinfo) -> str unsafe {
-    let buffer = vec::from_elem(INET6_ADDRSTRLEN as uint, 0u8);
+    let buffer = vec::from_elem(INET6_ADDRSTRLEN as uint + 1u, 0u8);
     c::inet_ntop(address.ai_family,
         if address.ai_family == AF_INET {
             let addr: *sockaddr4_in = unsafe::reinterpret_cast(address.ai_addr);
@@ -172,8 +172,7 @@ fn inet_ntop(address: addrinfo) -> str unsafe {
         },
         vec::unsafe::to_ptr(buffer), INET6_ADDRSTRLEN);
     
-    // Note that the unsafe from_bytes stops at null characters (and the safe version does not).
-    str::unsafe::from_bytes(buffer)
+    str::unsafe::from_buf(vec::unsafe::to_ptr(buffer))
 }
 
 // TODO: there is no portable way to get errno from rust so, for now, we'll just write them to stderr
@@ -413,8 +412,7 @@ fn test_getaddrinfo_localhost() {
                 assert p.ai_next != ptr::null();
 
                 let ipstr = inet_ntop(p);
-                let val = str::split_char(ipstr, 0 as char)[0];
-                assert str::eq("127.0.0.1", val) || str::eq("::1", val)
+                assert str::eq("127.0.0.1", ipstr) || str::eq("::1", ipstr)
             }
             c::freeaddrinfo(servinfo)
         }
