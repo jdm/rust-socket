@@ -272,7 +272,7 @@ fn send(sock: @socket_handle, buf: [u8]) -> result<uint, str> unsafe {
 }
 
 fn recv(sock: @socket_handle, len: uint) -> result<([u8], uint), str> unsafe {
-    let buf = vec::from_elem(len, 0u8);
+    let buf = vec::from_elem(len + 1u, 0u8);
     let bytes = c::recv(**sock, vec::unsafe::to_ptr(buf), len as libc::c_int, 0i32);
     if bytes == -1_i32 {
         log_err(#fmt["recv error"]);
