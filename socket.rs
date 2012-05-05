@@ -386,7 +386,7 @@ fn test_server_client() {
             // client
             task::spawn {||
                 result::chain(connect("localhost", port as u16)) {|s|
-                    let res = send(s, str::bytes(test_str));
+                    let res = str::as_buf(test_str, {|buf| send_buf(s, buf, str::len(test_str))});
                     assert result::is_success(res);
                     result::ok(s)
                 };
