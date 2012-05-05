@@ -4,7 +4,7 @@ import std::rand;
 export sockaddr, getaddrinfo, bind_socket, socket_handle, connect, listen, accept,
        send, recv, sendto, recvfrom, setsockopt, enablesockopt, disablesockopt,
        htons, htonl, ntohs, ntohl, sockaddr4_in, sockaddr6_in, sockaddr_basic,
-       sockaddr_storage, inet_ntop;
+       sockaddr_storage, inet_ntop, send_buf;
 export SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SO_DEBUG, SO_ACCEPTCONN, SO_REUSEADDR, 
        SO_KEEPALIVE, SO_DONTROUTE, SO_BROADCAST, SO_LINGER, SO_OOBINLINE, SO_SNDBUF, 
        SO_RCVBUF, SO_SNDLOWAT, SO_RCVLOWAT, SO_SNDTIMEO, SO_RCVTIMEO, SO_ERROR, SO_TYPE,
@@ -266,6 +266,17 @@ fn send(sock: @socket_handle, buf: [u8]) -> result<uint, str> unsafe {
     if amt == -1_i32 {
         log_err(#fmt["send error"]);
         result::err("send failed")
+    } else {
+        result::ok(amt as uint)
+    }
+}
+
+// Useful for sending str data (where you want to use as_buf instead of as_buffer).
+fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, str> unsafe {
+    let amt = c::send(**sock, buf, len as libc::c_int, 0i32);
+    if amt == -1_i32 {
+        log_err(#fmt["send error"]);
+        result::err("send_buf failed")
     } else {
         result::ok(amt as uint)
     }
