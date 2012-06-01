@@ -83,7 +83,7 @@ const INET6_ADDRSTRLEN: libc::c_int = 46_i32;
 
 type socklen_t = libc::c_int;
 type x = u8;
-type sockaddr_storage = (i16, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x);
+type sockaddr_storage = (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x);
 type sockaddr_basic = {sin_family: i16, padding: (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)};
 type sockaddr4_in = {sin_family: i16, sin_port: u16, sin_addr: in4_addr,
                      sin_zero: (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)};
@@ -117,6 +117,36 @@ type addrinfo = {ai_flags: libc::c_int,
                  ai_addr: *sockaddr_storage,
                  ai_canonname: *u8,
                  ai_next: *u8}; //XXX ai_next should be *addrinfo
+
+fn sockaddr_to_string(saddr: sockaddr) -> str unsafe {
+	alt saddr
+	{
+		unix(_basic)
+		{
+			"unix"		// TODO: is sockaddr_basic supposed to be a sockaddr_un?
+		}
+		ipv4(addr4)
+		{
+			let buffer = vec::from_elem(INET6_ADDRSTRLEN as uint + 1u, 0u8);
+			c::inet_ntop(
+				AF_INET,
+				unsafe::reinterpret_cast(ptr::addr_of(addr4.sin_addr)),
+				vec::unsafe::to_ptr(buffer),
+				INET6_ADDRSTRLEN);
+			str::unsafe::from_buf(vec::unsafe::to_ptr(buffer))
+		}
+		ipv6(addr6)
+		{
+			let buffer = vec::from_elem(INET6_ADDRSTRLEN as uint + 1u, 0u8);
+			c::inet_ntop(
+				AF_INET6,
+				unsafe::reinterpret_cast(ptr::addr_of(addr6.sin6_addr)),
+				vec::unsafe::to_ptr(buffer),
+				INET6_ADDRSTRLEN);
+			str::unsafe::from_buf(vec::unsafe::to_ptr(buffer))
+		}
+	}
+}
 
 #[cfg(target_os = "freebsd")]
 #[cfg(target_os = "win32")]
@@ -246,17 +276,26 @@ fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, str> {
 }
 
 // Returns a fd to allow multi-threaded servers to send the fd to a task.
-fn accept(sock: @socket_handle) -> result<libc::c_int, str> {
+fn accept(sock: @socket_handle) -> result<(libc::c_int, str), str> unsafe {
     #info["accepting with socket %?", **sock];
-    let addr = (0i16, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
+    let addr = (0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
     let fd = c::accept(**sock, ptr::addr_of(addr), ptr::addr_of(unused));
+    
     if fd == -1_i32 {
         log_err(#fmt["accept error"]);
         result::err("accept failed")
     } else {
         #info["accepted socket %?", fd];
-        result::ok(fd)
+        let (_, family, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = addr;
+        let their_addr = if family == AF_INET as u8 {
+                       ipv4(unsafe::reinterpret_cast(addr))
+                   } else if family == AF_INET6 as u8 {
+                       ipv6(unsafe::reinterpret_cast(addr))
+                   } else {
+                       unix(unsafe::reinterpret_cast(addr))
+                   };
+        result::ok((fd, sockaddr_to_string(their_addr)))
     }
 }
 
@@ -315,7 +354,7 @@ fn sendto(sock: @socket_handle, buf: [u8], to: sockaddr)
 
 fn recvfrom(sock: @socket_handle, len: uint)
     -> result<([u8], uint, sockaddr), str> unsafe {
-    let from_saddr = (0i16, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
+    let from_saddr = (0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = 0i32;
     let buf = vec::from_elem(len + 1u, 0u8);
     let amt = c::recvfrom(**sock, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
@@ -324,10 +363,12 @@ fn recvfrom(sock: @socket_handle, len: uint)
         log_err(#fmt["recvfrom error"]);
         result::err("recvfrom failed")
     } else {
-        let (family, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = from_saddr;
+        let (_, family, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = from_saddr;
         result::ok((buf, amt as uint,
-                   if family == AF_INET as i16 {
+                   if family == AF_INET as u8 {
                        ipv4(unsafe::reinterpret_cast(from_saddr))
+                   } else if family == AF_INET6 as u8 {
+                       ipv6(unsafe::reinterpret_cast(from_saddr))
                    } else {
                        unix(unsafe::reinterpret_cast(from_saddr))
                    }))
@@ -393,7 +434,9 @@ fn test_server_client() {
             };
 
             // server
-            result::chain(accept(s)) {|fd|
+            result::chain(accept(s)) {|args|
+               let (fd, from_addr) = args;
+                assert str::eq("127.0.0.1", from_addr) || str::eq("::1", from_addr);
                 let c = @socket_handle(fd);
                 let res = recv(c, 1024u);
                 assert result::is_success(res);
