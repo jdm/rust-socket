@@ -314,10 +314,10 @@ fn sendto(sock: @socket_handle, buf: [u8], to: sockaddr)
 }
 
 fn recvfrom(sock: @socket_handle, len: uint)
-    -> result<([u8], sockaddr), str> unsafe {
+    -> result<([u8], uint, sockaddr), str> unsafe {
     let from_saddr = (0i16, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = 0i32;
-    let buf = vec::from_elem(len, 0u8);
+    let buf = vec::from_elem(len + 1u, 0u8);
     let amt = c::recvfrom(**sock, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
                           ptr::addr_of(from_saddr), ptr::addr_of(unused));
     if amt == -1_i32 {
@@ -325,7 +325,7 @@ fn recvfrom(sock: @socket_handle, len: uint)
         result::err("recvfrom failed")
     } else {
         let (family, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = from_saddr;
-        result::ok((buf,
+        result::ok((buf, amt as uint,
                    if family == AF_INET as i16 {
                        ipv4(unsafe::reinterpret_cast(from_saddr))
                    } else {
