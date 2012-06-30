@@ -186,7 +186,7 @@ fn getaddrinfo(host: str, port: u16, f: fn(addrinfo) -> bool) -> option<str> uns
             }
         }
     }
-    c::freeaddrinfo(servinfo);
+    c::freeaddrinfo(servinfo); 
     result
 }
 
@@ -240,7 +240,7 @@ fn bind_socket(host: str, port: u16) -> result<@socket_handle, str> unsafe {
     };
     alt err
     {
-    	    option::some(mesg) {result::err(mesg)}
+    	    option::some(mesg) {result::err(copy(mesg))}
          option::none           {result::err("bind failed to find an address")}
     }
 }
@@ -263,7 +263,7 @@ fn connect(host: str, port: u16) -> result<@socket_handle, str> {
     };
     alt err
     {
-    	    option::some(mesg) {result::err(mesg)}
+    	    option::some(mesg) {result::err(copy(mesg))}
          option::none           {result::err("connect failed to find an address")}
     }
 }
@@ -301,7 +301,7 @@ fn accept(sock: @socket_handle) -> result<(libc::c_int, str), str> unsafe {
     }
 }
 
-fn send(sock: @socket_handle, buf: [u8]) -> result<uint, str> unsafe {
+fn send(sock: @socket_handle, buf: [u8]/~) -> result<uint, str> unsafe {
     let amt = c::send(sock.sockfd, vec::unsafe::to_ptr(buf),
                       vec::len(buf) as libc::c_int, 0i32);
     if amt == -1_i32 {
@@ -323,7 +323,7 @@ fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, str> unsa
     }
 }
 
-fn recv(sock: @socket_handle, len: uint) -> result<([u8], uint), str> unsafe {
+fn recv(sock: @socket_handle, len: uint) -> result<([u8]/~, uint), str> unsafe {
     let buf = vec::from_elem(len + 1u, 0u8);
     let bytes = c::recv(sock.sockfd, vec::unsafe::to_ptr(buf), len as libc::c_int, 0i32);
     if bytes == -1_i32 {
@@ -334,7 +334,7 @@ fn recv(sock: @socket_handle, len: uint) -> result<([u8], uint), str> unsafe {
     }
 }
 
-fn sendto(sock: @socket_handle, buf: [u8], to: sockaddr)
+fn sendto(sock: @socket_handle, buf: [u8]/~, to: sockaddr)
     -> result<uint, str> unsafe {
     let (to_saddr, to_len) = alt to {
       ipv4(s) { (unsafe::reinterpret_cast::<sockaddr4_in, sockaddr_storage>(s),
@@ -355,7 +355,7 @@ fn sendto(sock: @socket_handle, buf: [u8], to: sockaddr)
 }
 
 fn recvfrom(sock: @socket_handle, len: uint)
-    -> result<([u8], uint, sockaddr), str> unsafe {
+    -> result<([u8]/~, uint, sockaddr), str> unsafe {
     let from_saddr = (0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = 0i32;
     let buf = vec::from_elem(len + 1u, 0u8);
