@@ -1,8 +1,8 @@
 all:
-	rustc socket.rc -g
+	rustc socket.rc
 
 test:
-	rustc --test socket.rc -g
+	rustc --test socket.rc
 	export RUST_LOG=socket=3 && $(DEBUGGER) ./socket
 
 clean:
