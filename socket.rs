@@ -213,8 +213,10 @@ fn log_err(mesg: str)
 }
 
 // TODO: Isn't socket::socket_handle redundant?
-resource socket_handle(sockfd: libc::c_int) {
-    c::close(sockfd);
+class socket_handle {
+	let sockfd: libc::c_int;
+	new(x: libc::c_int) {self.sockfd = x;}
+	drop {c::close(self.sockfd);}
 }
 
 fn bind_socket(host: str, port: u16) -> result<@socket_handle, str> unsafe {
@@ -267,7 +269,7 @@ fn connect(host: str, port: u16) -> result<@socket_handle, str> {
 }
 
 fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, str> {
-    if c::listen(**sock, backlog) == -1_i32 {
+    if c::listen(sock.sockfd, backlog) == -1_i32 {
         log_err(#fmt["listen error"]);
         result::err("listen failed")
     } else {
@@ -277,10 +279,10 @@ fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, str> {
 
 // Returns a fd to allow multi-threaded servers to send the fd to a task.
 fn accept(sock: @socket_handle) -> result<(libc::c_int, str), str> unsafe {
-    #info["accepting with socket %?", **sock];
+    #info["accepting with socket %?", sock.sockfd];
     let addr = (0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
-    let fd = c::accept(**sock, ptr::addr_of(addr), ptr::addr_of(unused));
+    let fd = c::accept(sock.sockfd, ptr::addr_of(addr), ptr::addr_of(unused));
     
     if fd == -1_i32 {
         log_err(#fmt["accept error"]);
@@ -300,7 +302,7 @@ fn accept(sock: @socket_handle) -> result<(libc::c_int, str), str> unsafe {
 }
 
 fn send(sock: @socket_handle, buf: [u8]) -> result<uint, str> unsafe {
-    let amt = c::send(**sock, vec::unsafe::to_ptr(buf),
+    let amt = c::send(sock.sockfd, vec::unsafe::to_ptr(buf),
                       vec::len(buf) as libc::c_int, 0i32);
     if amt == -1_i32 {
         log_err(#fmt["send error"]);
@@ -312,7 +314,7 @@ fn send(sock: @socket_handle, buf: [u8]) -> result<uint, str> unsafe {
 
 // Useful for sending str data (where you want to use as_buf instead of as_buffer).
 fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, str> unsafe {
-    let amt = c::send(**sock, buf, len as libc::c_int, 0i32);
+    let amt = c::send(sock.sockfd, buf, len as libc::c_int, 0i32);
     if amt == -1_i32 {
         log_err(#fmt["send error"]);
         result::err("send_buf failed")
@@ -323,7 +325,7 @@ fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, str> unsa
 
 fn recv(sock: @socket_handle, len: uint) -> result<([u8], uint), str> unsafe {
     let buf = vec::from_elem(len + 1u, 0u8);
-    let bytes = c::recv(**sock, vec::unsafe::to_ptr(buf), len as libc::c_int, 0i32);
+    let bytes = c::recv(sock.sockfd, vec::unsafe::to_ptr(buf), len as libc::c_int, 0i32);
     if bytes == -1_i32 {
         log_err(#fmt["recv error"]);
         result::err("recv failed")
@@ -342,7 +344,7 @@ fn sendto(sock: @socket_handle, buf: [u8], to: sockaddr)
       unix(s) { (unsafe::reinterpret_cast::<sockaddr_basic, sockaddr_storage>(s),
                  sys::size_of::<sockaddr_basic>()) }
     };
-    let amt = c::sendto(**sock, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
+    let amt = c::sendto(sock.sockfd, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
                         ptr::addr_of(to_saddr), to_len as libc::c_int);
     if amt == -1_i32 {
         log_err(#fmt["sendto error"]);
@@ -357,7 +359,7 @@ fn recvfrom(sock: @socket_handle, len: uint)
     let from_saddr = (0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = 0i32;
     let buf = vec::from_elem(len + 1u, 0u8);
-    let amt = c::recvfrom(**sock, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
+    let amt = c::recvfrom(sock.sockfd, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
                           ptr::addr_of(from_saddr), ptr::addr_of(unused));
     if amt == -1_i32 {
         log_err(#fmt["recvfrom error"]);
@@ -378,7 +380,7 @@ fn recvfrom(sock: @socket_handle, len: uint)
 fn setsockopt(sock: @socket_handle, option: int, value: int)
     -> result<libc::c_int, str> unsafe {
     let val = value;
-    let r = c::setsockopt(**sock, SOL_SOCKET, option as libc::c_int,
+    let r = c::setsockopt(sock.sockfd, SOL_SOCKET, option as libc::c_int,
                           unsafe::reinterpret_cast(ptr::addr_of(val)),
                           sys::size_of::<int>() as socklen_t);
     if r == -1_i32 {
