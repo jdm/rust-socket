@@ -430,7 +430,7 @@ fn test_server_client() {
             task::spawn {||
                 result::chain(connect("localhost", port as u16)) {|s|
                     let res = str::as_buf(test_str, {|buf| send_buf(s, buf, str::len(test_str))});
-                    assert result::is_success(res);
+                    assert result::is_ok(res);
                     result::ok(s)
                 };
             };
@@ -441,7 +441,7 @@ fn test_server_client() {
                 assert str::eq("127.0.0.1", from_addr) || str::eq("::1", from_addr);
                 let c = @socket_handle(fd);
                 let res = recv(c, 1024u);
-                assert result::is_success(res);
+                assert result::is_ok(res);
                 let (buffer, len) = result::get(res);
                 assert len == str::len(test_str);
                 assert vec::slice(buffer, 0u, len) == str::bytes(test_str);
@@ -449,7 +449,7 @@ fn test_server_client() {
             }
         }
     };
-    assert result::is_success(r);
+    assert result::is_ok(r);
 }
 
 #[test]
