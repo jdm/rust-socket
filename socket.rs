@@ -14,7 +14,7 @@ export SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SO_DEBUG, SO_ACCEPTCONN, SO_REUSEADDR,
 type c_str = *libc::c_char;
 
 #[nolink]
-native mod c {
+extern mod c {
     fn socket(af: libc::c_int, typ: libc::c_int, protocol: libc::c_int) -> libc::c_int;
     fn bind(s: libc::c_int, name: *sockaddr_storage, namelen: socklen_t) -> libc::c_int;
     fn connect(s: libc::c_int, name: *sockaddr_storage, namelen: socklen_t) -> libc::c_int;
@@ -168,8 +168,8 @@ fn getaddrinfo(host: str, port: u16, f: fn(addrinfo) -> bool) -> option<str> uns
     let servinfo: *addrinfo = ptr::null();
     let s_port = #fmt["%u", port as uint];
     let mut result = option::none;
-    str::as_c_str(host) {|host|
-        str::as_c_str(s_port) {|port|
+    do str::as_c_str(host) |host| {
+        do str::as_c_str(s_port) |port| {
             let status = c::getaddrinfo(host, port, ptr::addr_of(hints),
                                         ptr::addr_of(servinfo));
             if status == 0i32 {
@@ -209,7 +209,7 @@ fn inet_ntop(address: addrinfo) -> str unsafe {
 // See #2269.
 fn log_err(mesg: str)
 {
-    str::as_c_str(mesg) {|buffer| libc::perror(buffer)};
+    do str::as_c_str(mesg) |buffer| {libc::perror(buffer)};
 }
 
 // TODO: Isn't socket::socket_handle redundant?
@@ -220,8 +220,8 @@ class socket_handle {
 }
 
 fn bind_socket(host: str, port: u16) -> result<@socket_handle, str> unsafe {
-    let err = for getaddrinfo(host, port) {|ai|
-        let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
+    let err = for getaddrinfo(host, port) |ai| {
+        let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol); 
         if sockfd != -1_i32 {
             let val = 1;
             let _ = c::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,    // this shouldn't be critical so we'll ignore errors from it
@@ -247,7 +247,7 @@ fn bind_socket(host: str, port: u16) -> result<@socket_handle, str> unsafe {
 
 fn connect(host: str, port: u16) -> result<@socket_handle, str> {
     #info["connecting to %s:%?", host, port];
-    let err = for getaddrinfo(host, port) {|ai|
+    let err = for getaddrinfo(host, port) |ai| {
         #debug["   trying %s", inet_ntop(ai)];
         let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
         if sockfd != -1_i32 {
@@ -278,7 +278,7 @@ fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, str> {
 }
 
 // Returns a fd to allow multi-threaded servers to send the fd to a task.
-fn accept(sock: @socket_handle) -> result<(libc::c_int, str), str> unsafe {
+fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: str}, str> unsafe {
     #info["accepting with socket %?", sock.sockfd];
     let addr = (0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
@@ -297,7 +297,7 @@ fn accept(sock: @socket_handle) -> result<(libc::c_int, str), str> unsafe {
                    } else {
                        unix(unsafe::reinterpret_cast(addr))
                    };
-        result::ok((fd, sockaddr_to_string(their_addr)))
+        result::ok({fd: fd, remote_addr: sockaddr_to_string(their_addr)})
     }
 }
 
@@ -323,14 +323,14 @@ fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, str> unsa
     }
 }
 
-fn recv(sock: @socket_handle, len: uint) -> result<([u8]/~, uint), str> unsafe {
+fn recv(sock: @socket_handle, len: uint) -> result<{buffer: ~[u8], bytes: uint}, str> unsafe {
     let buf = vec::from_elem(len + 1u, 0u8);
     let bytes = c::recv(sock.sockfd, vec::unsafe::to_ptr(buf), len as libc::c_int, 0i32);
     if bytes == -1_i32 {
         log_err(#fmt["recv error"]);
         result::err("recv failed")
     } else {
-        result::ok((buf, bytes as uint))
+        result::ok({buffer: buf, bytes: bytes as uint})
     }
 }
 
@@ -418,38 +418,86 @@ fn ntohl(netlong: u32) -> u32 {
 }
 
 #[test]
-fn test_server_client() {
+fn test_server_client()
+{
+    fn run_client(test_str: str, port: u16)
+    {
+         let ts = copy(test_str);
+         do task::spawn {
+             alt connect("localhost", port)
+             {
+                 result::ok(handle)
+                 {
+                     let res = str::as_buf(ts, |buf| {send_buf(handle, buf, str::len(ts))});
+                     assert result::is_ok(res);
+                 }
+                 result::err(err)
+                 {
+                     #error["Error %s connecting", err];
+                     assert false;
+                 }
+             }
+         };
+    }
+    
+    fn run_server(test_str: str, s: @socket_handle)
+    {
+         alt accept(s)
+         {
+             result::ok(args)
+             {
+                 assert str::eq("127.0.0.1", args.remote_addr) || str::eq("::1", args.remote_addr);
+                 let c = @socket_handle(args.fd);
+                 alt recv(c, 1024u)
+                 {
+                     result::ok(res)
+                     {
+                         assert res.bytes == str::len(test_str);
+                         assert vec::slice(res.buffer, 0u, res.bytes) == str::bytes(test_str);
+                     }
+                     result::err(err)
+                     {
+                         #error["Error %s with recv", err];
+                         assert false;
+                     }
+                 }
+             }
+             result::err(err)
+             {
+                 #error["Error %s accepting", err];
+                 assert false;
+             }
+         }
+    }
+    
     #info["---- test_server_client ------------------------"];
     let port = 48006u16;
     let test_str = "testing";
-
-    let r = result::chain(bind_socket("localhost", port as u16)) {|s|
-        result::chain(listen(s, 1i32)) {|s|
-
-            // client
-            task::spawn {||
-                result::chain(connect("localhost", port as u16)) {|s|
-                    let res = str::as_buf(test_str, {|buf| send_buf(s, buf, str::len(test_str))});
-                    assert result::is_ok(res);
-                    result::ok(s)
-                };
-            };
-
-            // server
-            result::chain(accept(s)) {|args|
-               let (fd, from_addr) = args;
-                assert str::eq("127.0.0.1", from_addr) || str::eq("::1", from_addr);
-                let c = @socket_handle(fd);
-                let res = recv(c, 1024u);
-                assert result::is_ok(res);
-                let (buffer, len) = result::get(res);
-                assert len == str::len(test_str);
-                assert vec::slice(buffer, 0u, len) == str::bytes(test_str);
-                result::ok(c)
+    
+    alt bind_socket("localhost", port)
+    {
+        result::ok(s)
+        {
+            alt listen(s, 1i32)
+            {
+                result::ok(s)
+                {
+                    run_client(test_str, port);
+                    run_server(test_str, s);
+                }
+                result::err(err)
+                {
+                    #error["Error %s listening", err];
+                    assert false;
+                }
             }
         }
-    };
-    assert result::is_ok(r);
+        result::err(err)
+        {
+            #error["Error %s binding", err];
+            assert false;
+        }
+    }
 }
 
 #[test]
@@ -458,8 +506,8 @@ fn test_getaddrinfo_localhost() {
     let hints = {ai_family: AF_UNSPEC, ai_socktype: SOCK_STREAM with mk_default_addrinfo()};
     let servinfo: *addrinfo = ptr::null();
     let port = 48007u16;
-    str::as_c_str("localhost") {|host|
-        str::as_c_str(#fmt["%u", port as uint]) {|p|
+    do str::as_c_str("localhost") |host| {
+        do str::as_c_str(#fmt["%u", port as uint]) |p| {
             let status = c::getaddrinfo(host, p, ptr::addr_of(hints), ptr::addr_of(servinfo));
             assert status == 0_i32;
             unsafe {
