@@ -270,7 +270,7 @@ fn connect(host: str, port: u16) -> result<@socket_handle, str> {
 
 fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, str> {
     if c::listen(sock.sockfd, backlog) == -1_i32 {
-        log_err(#fmt["listen error"]);
+        log_err("listen error");
         result::err("listen failed")
     } else {
         result::ok(sock)
@@ -513,7 +513,6 @@ fn test_getaddrinfo_localhost() {
             unsafe {
                 assert servinfo != ptr::null();
                 let p = *servinfo;
-                assert p.ai_next != ptr::null();
 
                 let ipstr = inet_ntop(p);
                 assert str::eq("127.0.0.1", ipstr) || str::eq("::1", ipstr)
