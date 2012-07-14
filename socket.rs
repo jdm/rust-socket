@@ -251,17 +251,20 @@ fn bind_socket(host: str, port: u16) -> result<@socket_handle, str> unsafe {
 fn connect(host: str, port: u16) -> result<@socket_handle, str> {
     #info["connecting to %s:%?", host, port];
     let err = for getaddrinfo(host, port) |ai| {
-        #debug["   trying %s", inet_ntop(ai)];
-        let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
-        if sockfd != -1_i32 {
-            if c::connect(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
-                c::close(sockfd);
+        if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
+        {
+            #debug["   trying %s", inet_ntop(ai)];
+            let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
+            if sockfd != -1_i32 {
+                if c::connect(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
+                    c::close(sockfd);
+                } else {
+                    #info["   connected to socket %?", sockfd];
+                    ret result::ok(@socket_handle(sockfd));
+                }
             } else {
-                #info["   connected to socket %?", sockfd];
-                ret result::ok(@socket_handle(sockfd));
+                log_err(#fmt["socket(%s, %?) error", host, port]);
             }
-        } else {
-            log_err(#fmt["socket(%s, %?) error", host, port]);
         }
     };
     alt err
