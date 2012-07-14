@@ -317,9 +317,9 @@ fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: str}, s
         log_err(#fmt["accept error"]);
         result::err("accept failed")
     } else {
-        let their_addr = if addr.ss_family == AF_INET as u8 {
+        let their_addr = if addr.ss_family as u8 == AF_INET as u8 {
                        ipv4(*(ptr::addr_of(addr) as *sockaddr4_in))
-                   } else if addr.ss_family == AF_INET6 as u8 {
+                   } else if addr.ss_family as u8 == AF_INET6 as u8 {
                        ipv6(*(ptr::addr_of(addr) as *sockaddr6_in))
                    } else {
                        unix(*(ptr::addr_of(addr) as *sockaddr_basic))
@@ -394,9 +394,9 @@ fn recvfrom(sock: @socket_handle, len: uint)
         result::err("recvfrom failed")
     } else {
         result::ok((buf, amt as uint,
-                   if from_saddr.ss_family == AF_INET as u8 {
+                   if from_saddr.ss_family as u8 == AF_INET as u8 {
                        ipv4(*(ptr::addr_of(from_saddr) as *sockaddr4_in))
-                   } else if from_saddr.ss_family == AF_INET6 as u8 {
+                   } else if from_saddr.ss_family as u8 == AF_INET6 as u8 {
                        ipv6(*(ptr::addr_of(from_saddr) as *sockaddr6_in))
                    } else {
                        unix(*(ptr::addr_of(from_saddr) as *sockaddr_basic))
