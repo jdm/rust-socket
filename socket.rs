@@ -79,9 +79,9 @@ const AI_CANONNAME: libc::c_int = 0x0002_i32;
 const AI_NUMERICHOST: libc::c_int = 0x0004_i32;
 const AI_NUMERICSERV: libc::c_int = 0x1000_i32;
 
-const INET6_ADDRSTRLEN: libc::c_int = 46_i32;
+const INET6_ADDRSTRLEN: u32 = 46;
 
-type socklen_t = libc::c_int;
+type socklen_t = u32;    // 32-bit on Mac (__darwin_socklen_t in _types.h) and Ubuntu Linux (__socklen_t in types.h)
 type x = u8;
 type sockaddr_storage = (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x);
 type sockaddr_basic = {sin_family: i16, padding: (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)};
@@ -152,13 +152,13 @@ fn sockaddr_to_string(saddr: sockaddr) -> str unsafe {
 #[cfg(target_os = "win32")]
 #[cfg(target_os = "macos")]
 fn mk_default_addrinfo() -> addrinfo {
-    {ai_flags: 0i32, ai_family: 0i32, ai_socktype: 0i32, ai_protocol: 0i32, ai_addrlen: 0i32,
+    {ai_flags: 0i32, ai_family: 0i32, ai_socktype: 0i32, ai_protocol: 0i32, ai_addrlen: 0u32,
      ai_canonname: ptr::null(), ai_addr: ptr::null(), ai_next: ptr::null()}
 }
 
 #[cfg(target_os = "linux")]
 fn mk_default_addrinfo() -> addrinfo {
-    {ai_flags: 0i32, ai_family: 0i32, ai_socktype: 0i32, ai_protocol: 0i32, ai_addrlen: 0i32,
+    {ai_flags: 0i32, ai_family: 0i32, ai_socktype: 0i32, ai_protocol: 0i32, ai_addrlen: 0u32,
      ai_addr: ptr::null(), ai_canonname: ptr::null(), ai_next: ptr::null()}
 }
 
@@ -345,7 +345,7 @@ fn sendto(sock: @socket_handle, buf: [u8]/~, to: sockaddr)
                  sys::size_of::<sockaddr_basic>()) }
     };
     let amt = c::sendto(sock.sockfd, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
-                        ptr::addr_of(to_saddr), to_len as libc::c_int);
+                        ptr::addr_of(to_saddr), to_len as u32);
     if amt == -1_i32 {
         log_err(#fmt["sendto error"]);
         result::err("sendto failed")
@@ -357,7 +357,7 @@ fn sendto(sock: @socket_handle, buf: [u8]/~, to: sockaddr)
 fn recvfrom(sock: @socket_handle, len: uint)
     -> result<([u8]/~, uint, sockaddr), str> unsafe {
     let from_saddr = (0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
-    let unused: socklen_t = 0i32;
+    let unused: socklen_t = 0u32;
     let buf = vec::from_elem(len + 1u, 0u8);
     let amt = c::recvfrom(sock.sockfd, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
                           ptr::addr_of(from_saddr), ptr::addr_of(unused));
@@ -423,7 +423,7 @@ fn test_server_client()
     fn run_client(test_str: str, port: u16)
     {
          let ts = copy(test_str);
-         do task::spawn {
+         do task::spawn_sched(task::manual_threads(4)) {    // See https://github.com/mozilla/rust/issues/2841
              alt connect("localhost", port)
              {
                  result::ok(handle)
