@@ -221,21 +221,24 @@ class socket_handle {
 
 fn bind_socket(host: str, port: u16) -> result<@socket_handle, str> unsafe {
     let err = for getaddrinfo(host, port) |ai| {
-        let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
-        if sockfd != -1_i32 {
-            let val = 1;
-            let _ = c::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,    // this shouldn't be critical so we'll ignore errors from it
-                                  unsafe::reinterpret_cast(ptr::addr_of(val)),
-                                  sys::size_of::<int>() as socklen_t);
-            
-            if c::bind(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
-                c::close(sockfd);
+        if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
+        {
+            let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
+            if sockfd != -1_i32 {
+                let val = 1;
+                let _ = c::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,    // this shouldn't be critical so we'll ignore errors from it
+                                      unsafe::reinterpret_cast(ptr::addr_of(val)),
+                                      sys::size_of::<int>() as socklen_t);
+                
+                if c::bind(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
+                    c::close(sockfd);
+                } else {
+                    #debug["   bound to socket %?", sockfd];
+                    ret result::ok(@socket_handle(sockfd));
+                }
             } else {
-                #debug["   bound to socket %?", sockfd];
-                ret result::ok(@socket_handle(sockfd));
+                log_err(#fmt["socket(%s) error", inet_ntop(ai)]);
             }
-        } else {
-            log_err(#fmt["socket(%s) error", inet_ntop(ai)]);
         }
     };
     alt err
