@@ -1,14 +1,17 @@
+RUSTC ?= rustc
+
+dummy1 := $(shell mkdir bin 2> /dev/null)
+
 all:
-	rustc socket.rc
+	$(RUSTC) -o bin/socket socket.rc
 
-test:
-	rustc --test socket.rc
-	export RUST_LOG=socket=3 && $(DEBUGGER) ./socket
+check:
+	$(RUSTC) -o bin/test-socket --test socket.rc
+	export RUST_LOG=socket=3 && $(DEBUGGER) bin/test-socket
 
-test1:
-	rustc --test socket.rc
-	export RUST_LOG=socket=3 && $(DEBUGGER) ./socket test_socket_bind
+check1:
+	$(RUSTC) -o bin/test-socket --test socket.rc
+	export RUST_LOG=socket=3 && $(DEBUGGER) bin/test-socket test_socket_bind
 
 clean:
-	rm -rf libsocket-*
-	rm -rf socket socket.dSYM
+	rm -rf bin

@@ -1,6 +1,2 @@
-*.dSYM
-*.dylib
-socket
-*.swp
-
+bin
 
