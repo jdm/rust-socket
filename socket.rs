@@ -83,7 +83,7 @@ const INET6_ADDRSTRLEN: u32 = 46;
 
 type socklen_t = u32;    // 32-bit on Mac (__darwin_socklen_t in _types.h) and Ubuntu Linux (__socklen_t in types.h)
 type x = u8;
-type sockaddr_storage = (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x);
+
 type sockaddr_basic = {sin_family: i16, padding: (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)};
 type sockaddr4_in = {sin_family: i16, sin_port: u16, sin_addr: in4_addr,
                      sin_zero: (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)};
@@ -96,6 +96,18 @@ enum sockaddr {
     ipv4(sockaddr4_in),
     ipv6(sockaddr6_in)
 }
+
+// TODO: think something like [u8]/128 is supported now, but not sure how to initialize it.
+//
+// On both Linux and Mac this struct is supposed to be 128 bytes. Rather than wrestle with
+// alignment we simply make contents 128 bytes which should be fine because the C API
+// always uses pointers to sockaddr_storage.
+#[cfg(target_os = "freebsd")]
+#[cfg(target_os = "macos")]
+type sockaddr_storage = {ss_len: u8, ss_family: u8, contents: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)};
+
+#[cfg(target_os = "linux")]
+type sockaddr_storage = {ss_family: libc::c_ushort, contents: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)};
 
 #[cfg(target_os = "freebsd")]
 #[cfg(target_os = "win32")]
@@ -146,6 +158,17 @@ fn sockaddr_to_string(saddr: sockaddr) -> str unsafe {
 			str::unsafe::from_buf(vec::unsafe::to_ptr(buffer))
 		}
 	}
+}
+
+#[cfg(target_os = "freebsd")]
+#[cfg(target_os = "macos")]
+fn mk_default_storage() -> sockaddr_storage {
+    {ss_len: 0u8, ss_family: 0u8, contents: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)}
+}
+
+#[cfg(target_os = "linux")]
+fn mk_default_storage() -> sockaddr_storage {
+    {ss_family: 0, contents: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)}
 }
 
 #[cfg(target_os = "freebsd")]
@@ -286,7 +309,7 @@ fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, str> {
 // Returns a fd to allow multi-threaded servers to send the fd to a task.
 fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: str}, str> unsafe {
     #info["accepting with socket %?", sock.sockfd];
-    let addr = (0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
+    let addr = mk_default_storage();
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
     let fd = c::accept(sock.sockfd, ptr::addr_of(addr), ptr::addr_of(unused));
     
@@ -294,15 +317,14 @@ fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: str}, s
         log_err(#fmt["accept error"]);
         result::err("accept failed")
     } else {
-        #info["accepted socket %?", fd];
-        let (_, family, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = addr;
-        let their_addr = if family == AF_INET as u8 {
-                       ipv4(unsafe::reinterpret_cast(addr))
-                   } else if family == AF_INET6 as u8 {
-                       ipv6(unsafe::reinterpret_cast(addr))
+        let their_addr = if addr.ss_family == AF_INET as u8 {
+                       ipv4(*(ptr::addr_of(addr) as *sockaddr4_in))
+                   } else if addr.ss_family == AF_INET6 as u8 {
+                       ipv6(*(ptr::addr_of(addr) as *sockaddr6_in))
                    } else {
-                       unix(unsafe::reinterpret_cast(addr))
+                       unix(*(ptr::addr_of(addr) as *sockaddr_basic))
                    };
+        #info["accepted socket %? (%s)", fd, sockaddr_to_string(their_addr)];
         result::ok({fd: fd, remote_addr: sockaddr_to_string(their_addr)})
     }
 }
@@ -340,14 +362,14 @@ fn recv(sock: @socket_handle, len: uint) -> result<{buffer: ~[u8], bytes: uint},
     }
 }
 
-fn sendto(sock: @socket_handle, buf: [u8]/~, to: sockaddr)
+fn sendto(sock: @socket_handle, buf: ~[u8], to: sockaddr)
     -> result<uint, str> unsafe {
     let (to_saddr, to_len) = alt to {
-      ipv4(s) { (unsafe::reinterpret_cast::<sockaddr4_in, sockaddr_storage>(s),
+      ipv4(s) { (*(ptr::addr_of(s) as *sockaddr_storage),
                  sys::size_of::<sockaddr4_in>()) }
-      ipv6(s) { (unsafe::reinterpret_cast::<sockaddr6_in, sockaddr_storage>(s),
+      ipv6(s) { (*(ptr::addr_of(s) as *sockaddr_storage),
                  sys::size_of::<sockaddr6_in>()) }
-      unix(s) { (unsafe::reinterpret_cast::<sockaddr_basic, sockaddr_storage>(s),
+      unix(s) { (*(ptr::addr_of(s) as *sockaddr_storage),
                  sys::size_of::<sockaddr_basic>()) }
     };
     let amt = c::sendto(sock.sockfd, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
@@ -361,8 +383,8 @@ fn sendto(sock: @socket_handle, buf: [u8]/~, to: sockaddr)
 }
 
 fn recvfrom(sock: @socket_handle, len: uint)
-    -> result<([u8]/~, uint, sockaddr), str> unsafe {
-    let from_saddr = (0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8);
+    -> result<(~[u8], uint, sockaddr), str> unsafe {
+    let from_saddr = mk_default_storage();
     let unused: socklen_t = 0u32;
     let buf = vec::from_elem(len + 1u, 0u8);
     let amt = c::recvfrom(sock.sockfd, vec::unsafe::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
@@ -371,14 +393,13 @@ fn recvfrom(sock: @socket_handle, len: uint)
         log_err(#fmt["recvfrom error"]);
         result::err("recvfrom failed")
     } else {
-        let (_, family, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = from_saddr;
         result::ok((buf, amt as uint,
-                   if family == AF_INET as u8 {
-                       ipv4(unsafe::reinterpret_cast(from_saddr))
-                   } else if family == AF_INET6 as u8 {
-                       ipv6(unsafe::reinterpret_cast(from_saddr))
+                   if from_saddr.ss_family == AF_INET as u8 {
+                       ipv4(*(ptr::addr_of(from_saddr) as *sockaddr4_in))
+                   } else if from_saddr.ss_family == AF_INET6 as u8 {
+                       ipv6(*(ptr::addr_of(from_saddr) as *sockaddr6_in))
                    } else {
-                       unix(unsafe::reinterpret_cast(from_saddr))
+                       unix(*(ptr::addr_of(from_saddr) as *sockaddr_basic))
                    }))
     }
 }
@@ -452,7 +473,11 @@ fn test_server_client()
          {
              result::ok(args)
              {
-                 assert str::eq("127.0.0.1", args.remote_addr) || str::eq("::1", args.remote_addr);
+                 if !str::eq("127.0.0.1", args.remote_addr) && !str::eq("::1", args.remote_addr)
+                 {
+                     #error["Expected 127.0.0.1 or ::1 for remote addr but found %s", args.remote_addr];
+                     assert false
+                 }
                  let c = @socket_handle(args.fd);
                  alt recv(c, 1024u)
                  {
