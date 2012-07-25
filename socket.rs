@@ -4,7 +4,7 @@ import std::rand;
 export sockaddr, getaddrinfo, bind_socket, socket_handle, connect, listen, accept,
        send, recv, sendto, recvfrom, setsockopt, enablesockopt, disablesockopt,
        htons, htonl, ntohs, ntohl, sockaddr4_in, sockaddr6_in, sockaddr_basic,
-       sockaddr_storage, inet_ntop, send_buf;
+       sockaddr_storage, inet_ntop, send_buf, create_socket;
 export SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SO_DEBUG, SO_ACCEPTCONN, SO_REUSEADDR, 
        SO_KEEPALIVE, SO_DONTROUTE, SO_BROADCAST, SO_LINGER, SO_OOBINLINE, SO_SNDBUF, 
        SO_RCVBUF, SO_SNDLOWAT, SO_RCVLOWAT, SO_SNDTIMEO, SO_RCVTIMEO, SO_ERROR, SO_TYPE,
@@ -240,6 +240,13 @@ class socket_handle {
 	let sockfd: libc::c_int;
 	new(x: libc::c_int) {self.sockfd = x;}
 	drop {c::close(self.sockfd);}
+}
+
+// TODO: temporary (cross-crate ctor calls are broken in f676547c9788b919762bfb379b1e26ebd94d3dc9)
+// See https://github.com/mozilla/rust/issues/3012
+fn create_socket(x: libc::c_int) -> @socket_handle
+{
+    @socket_handle(x)
 }
 
 fn bind_socket(host: ~str, port: u16) -> result<@socket_handle, ~str> unsafe {
