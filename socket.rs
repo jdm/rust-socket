@@ -457,10 +457,8 @@ fn test_server_client()
 {
     fn run_client(test_str: ~str, port: u16)
     {
-error!("run_client");
          let ts = copy(test_str);
          do task::spawn {
-error!("spawned thread");
              match connect(~"localhost", port)
              {
                  result::Ok(handle) =>
@@ -479,7 +477,6 @@ error!("spawned thread");
     
     fn run_server(test_str: ~str, s: @socket_handle)
     {
-error!("run_server");
          match accept(s)
          {
              result::Ok(args) =>
@@ -512,7 +509,6 @@ error!("run_server");
          }
     }
     
-error!("test_server_client");
     info!("---- test_server_client ------------------------");
     let port = 48006u16;
     let test_str = ~"testing";
@@ -521,7 +517,6 @@ error!("test_server_client");
     {
         result::Ok(s) =>
         {
-error!("listening");
             match listen(s, 1i32)
             {
                 result::Ok(s) =>
@@ -542,7 +537,6 @@ error!("listening");
             assert false;
         }
     }
-error!("exiting test_server_client");
 }
 
 #[test]
