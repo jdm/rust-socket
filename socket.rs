@@ -1,6 +1,6 @@
 // Last built with rust commit ee2ce036ccd53d8c19689d86cf8b3bd5cf37f40f
-import result = result::result;
-import std::rand;
+import result = result::Result;
+import core::rand;
 
 export sockaddr, getaddrinfo, bind_socket, socket_handle, connect, listen, accept,
        send, recv, sendto, recvfrom, setsockopt, enablesockopt, disablesockopt,
@@ -187,7 +187,7 @@ fn mk_default_addrinfo() -> addrinfo {
      ai_addr: ptr::null(), ai_canonname: ptr::null(), ai_next: ptr::null()}
 }
 
-fn getaddrinfo(host: ~str, port: u16, f: fn(addrinfo) -> bool) -> option<~str> unsafe {
+fn getaddrinfo(host: ~str, port: u16, f: fn(addrinfo) -> bool) -> Option<~str> unsafe {
     let hints = {ai_family: AF_UNSPEC, ai_socktype: SOCK_STREAM, ..mk_default_addrinfo()};
     let servinfo: *addrinfo = ptr::null();
     let s_port = #fmt["%u", port as uint];
@@ -457,13 +457,15 @@ fn test_server_client()
 {
     fn run_client(test_str: ~str, port: u16)
     {
+error!("run_client");
          let ts = copy(test_str);
-         do task::spawn_sched(task::manual_threads(4)) {    // See https://github.com/mozilla/rust/issues/2841
+         do task::spawn {
+error!("spawned thread");
              match connect(~"localhost", port)
              {
                  result::Ok(handle) =>
                  {
-                     let res = str::as_buf(ts, |buf| {send_buf(handle, buf, str::len(ts))});
+                     let res = str::as_buf(ts, |buf, _len| {send_buf(handle, buf, str::len(ts))});
                      assert result::is_ok(res);
                  }
                  result::Err(err) =>
@@ -477,11 +479,12 @@ fn test_server_client()
     
     fn run_server(test_str: ~str, s: @socket_handle)
     {
+error!("run_server");
          match accept(s)
          {
              result::Ok(args) =>
              {
-                 if !str::eq(~"127.0.0.1", args.remote_addr) && !str::eq(~"::1", args.remote_addr)
+                 if !str::eq(&~"127.0.0.1", &args.remote_addr) && !str::eq(&~"::1", &args.remote_addr)
                  {
                      error!("Expected 127.0.0.1 or ::1 for remote addr but found %s", args.remote_addr);
                      assert false
@@ -492,7 +495,7 @@ fn test_server_client()
                      result::Ok(res) =>
                      {
                          assert res.bytes == str::len(test_str);
-                         assert vec::slice(res.buffer, 0u, res.bytes) == str::bytes(test_str);
+                         assert vec::slice(res.buffer, 0u, res.bytes) == str::to_bytes(test_str);
                      }
                      result::Err(err) =>
                      {
@@ -509,6 +512,7 @@ fn test_server_client()
          }
     }
     
+error!("test_server_client");
     info!("---- test_server_client ------------------------");
     let port = 48006u16;
     let test_str = ~"testing";
@@ -517,6 +521,7 @@ fn test_server_client()
     {
         result::Ok(s) =>
         {
+error!("listening");
             match listen(s, 1i32)
             {
                 result::Ok(s) =>
@@ -537,6 +542,7 @@ fn test_server_client()
             assert false;
         }
     }
+error!("exiting test_server_client");
 }
 
 #[test]
@@ -554,7 +560,7 @@ fn test_getaddrinfo_localhost() {
                 let p = *servinfo;
 
                 let ipstr = inet_ntop(p);
-                assert str::eq(~"127.0.0.1", ipstr) || str::eq(~"::1", ipstr)
+                assert str::eq(&~"127.0.0.1", &ipstr) || str::eq(&~"::1", &ipstr)
             }
             c::freeaddrinfo(servinfo)
         }
