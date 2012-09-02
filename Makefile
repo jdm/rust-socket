@@ -11,7 +11,7 @@ check:
 
 check1:
 	$(RUSTC) -o bin/test-socket --test crate.rc
-	export RUST_LOG=socket::crate=3 && $(DEBUGGER) bin/test-socket test_server_client
+	export RUST_LOG=test-socket::socket=3 && $(DEBUGGER) bin/test-socket test_server_client
 
 clean:
 	rm -rf bin
