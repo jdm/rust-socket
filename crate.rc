@@ -1,13 +1,15 @@
 use std;
 
 #[link(name = "socket",
-       vers = "0.1",
+       vers = "0.1", 
        uuid = "AF82CEF5-A320-49C0-AE56-43129C5229D5",
        url = "https://github.com/jdm/rust-socket")]
 
 #[comment = "Rust socket library"]
 #[license = "MIT"]
 #[crate_type = "lib"]
+
+#[warn(deprecated_mode)]
 
 mod socket;
 

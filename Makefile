@@ -3,7 +3,7 @@ RUSTC ?= rustc
 dummy1 := $(shell mkdir bin 2> /dev/null)
 
 all:
-	$(RUSTC) -o bin/socket crate.rc
+	$(RUSTC) -o bin/socket --lib crate.rc
 
 check:
 	$(RUSTC) -o bin/test-socket --test crate.rc
