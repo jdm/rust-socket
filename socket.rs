@@ -1,4 +1,4 @@
-// Last built with rust commit ee2ce036ccd53d8c19689d86cf8b3bd5cf37f40f
+// Last built with rust commit 9c98d0f99b44e1c57bdd60881518140e2593a5a4
 import result = result::Result;
 import core::rand;
 
@@ -147,7 +147,7 @@ fn sockaddr_to_string(saddr: &sockaddr) -> ~str
                 let buffer = vec::from_elem(INET6_ADDRSTRLEN as uint + 1u, 0u8);
                 c::inet_ntop(
                     AF_INET,
-                    unsafe::reinterpret_cast(ptr::addr_of(addr4.sin_addr)),
+                    unsafe::reinterpret_cast(&ptr::addr_of(addr4.sin_addr)),
                     vec::unsafe::to_ptr(buffer),
                     INET6_ADDRSTRLEN);
                 str::unsafe::from_buf(vec::unsafe::to_ptr(buffer))
@@ -157,7 +157,7 @@ fn sockaddr_to_string(saddr: &sockaddr) -> ~str
                 let buffer = vec::from_elem(INET6_ADDRSTRLEN as uint + 1u, 0u8);
                 c::inet_ntop(
                     AF_INET6,
-                    unsafe::reinterpret_cast(ptr::addr_of(addr6.sin6_addr)),
+                    unsafe::reinterpret_cast(&ptr::addr_of(addr6.sin6_addr)),
                     vec::unsafe::to_ptr(buffer),
                     INET6_ADDRSTRLEN);
                 str::unsafe::from_buf(vec::unsafe::to_ptr(buffer))
@@ -206,7 +206,7 @@ fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~str> u
                     if !f(*p) {
                         break;
                     }
-                    p = unsafe::reinterpret_cast((*p).ai_next);
+                    p = unsafe::reinterpret_cast(&(*p).ai_next);
                 }
             } else {
                 warn!("getaddrinfo returned %? (%s)", status, str::unsafe::from_c_str(c::gai_strerror(status)));
@@ -222,11 +222,11 @@ fn inet_ntop(address: &addrinfo) -> ~str unsafe {
     let buffer = vec::from_elem(INET6_ADDRSTRLEN as uint + 1u, 0u8);
     c::inet_ntop(address.ai_family,
         if address.ai_family == AF_INET {
-            let addr: *sockaddr4_in = unsafe::reinterpret_cast(address.ai_addr);
-            unsafe::reinterpret_cast(ptr::addr_of((*addr).sin_addr))
+            let addr: *sockaddr4_in = unsafe::reinterpret_cast(&address.ai_addr);
+            unsafe::reinterpret_cast(&ptr::addr_of((*addr).sin_addr))
         } else {
-            let addr: *sockaddr6_in = unsafe::reinterpret_cast(address.ai_addr);
-            unsafe::reinterpret_cast(ptr::addr_of((*addr).sin6_addr))
+            let addr: *sockaddr6_in = unsafe::reinterpret_cast(&address.ai_addr);
+            unsafe::reinterpret_cast(&ptr::addr_of((*addr).sin6_addr))
         },
         vec::unsafe::to_ptr(buffer), INET6_ADDRSTRLEN);
     
@@ -242,17 +242,14 @@ fn log_err(mesg: &str)
 
 // TODO: Isn't socket::socket_handle redundant?
 struct socket_handle {
-	let sockfd: libc::c_int;
-	new(x: libc::c_int) {self.sockfd = x;}
+	sockfd: libc::c_int,
 	drop {c::close(self.sockfd);}
 }
 
-// TODO: temporary (cross-crate ctor calls are broken in f676547c9788b919762bfb379b1e26ebd94d3dc9)
-// See https://github.com/mozilla/rust/issues/3012
-//fn create_socket(x: libc::c_int) -> @socket_handle
-//{
-//    @socket_handle(x)
-//}
+fn socket_handle(x: libc::c_int) -> socket_handle
+{
+    socket_handle {sockfd: x}
+}
 
 fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
     let err = for getaddrinfo(host, port) |ai| {
@@ -262,7 +259,7 @@ fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
             if sockfd != -1_i32 {
                 let val = 1;
                 let _ = c::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,    // this shouldn't be critical so we'll ignore errors from it
-                                      unsafe::reinterpret_cast(ptr::addr_of(val)),
+                                      unsafe::reinterpret_cast(&ptr::addr_of(val)),
                                       sys::size_of::<int>() as socklen_t);
                 
                 if c::bind(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
@@ -420,7 +417,7 @@ fn setsockopt(sock: @socket_handle, option: int, value: int)
     -> result<libc::c_int, ~str> unsafe {
     let val = value;
     let r = c::setsockopt(sock.sockfd, SOL_SOCKET, option as libc::c_int,
-                          unsafe::reinterpret_cast(ptr::addr_of(val)),
+                          unsafe::reinterpret_cast(&ptr::addr_of(val)),
                           sys::size_of::<int>() as socklen_t);
     if r == -1_i32 {
         log_err(#fmt["setsockopt error"]);
