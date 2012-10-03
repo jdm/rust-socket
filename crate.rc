@@ -7,15 +7,15 @@
 #[license = "MIT"];
 #[crate_type = "lib"];
 
-#[allow(non_camel_case_types)]; 
-#[allow(implicit_copies)];							// TODO: enable more of these
-#[allow(non_implicitly_copyable_typarams)];
-#[allow(deprecated_mode)];
-#[allow(deprecated_pattern)];
 #[allow(unused_imports)];
-#[allow(structural_records)];
+#[allow(implicit_copies)];
+#[allow(deprecated_pattern)];
 
-use std;
+#[allow(structural_records)];	// TODO: enable some of these
+#[allow(deprecated_mode)];
+#[allow(non_implicitly_copyable_typarams)];
+
+extern mod std;
 
 mod socket;
 
