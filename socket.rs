@@ -132,7 +132,7 @@ type addrinfo = {ai_flags: libc::c_int,
                  ai_canonname: *u8,
                  ai_next: *u8}; //XXX ai_next should be *addrinfo
 
-fn sockaddr_to_string(saddr: &sockaddr) -> ~str
+pub fn sockaddr_to_string(saddr: &sockaddr) -> ~str
 {
     unsafe
     {
@@ -168,30 +168,30 @@ fn sockaddr_to_string(saddr: &sockaddr) -> ~str
 
 #[cfg(target_os = "freebsd")]
 #[cfg(target_os = "macos")]
-fn mk_default_storage() -> sockaddr_storage {
+pub fn mk_default_storage() -> sockaddr_storage {
     {ss_len: 0u8, ss_family: 0u8, contents: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)}
 }
 
 #[cfg(target_os = "linux")]
-fn mk_default_storage() -> sockaddr_storage {
+pub fn mk_default_storage() -> sockaddr_storage {
     {ss_family: 0, contents: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)}
 }
 
 #[cfg(target_os = "freebsd")]
 #[cfg(target_os = "win32")]
 #[cfg(target_os = "macos")]
-fn mk_default_addrinfo() -> addrinfo {
+pub fn mk_default_addrinfo() -> addrinfo {
     {ai_flags: 0i32, ai_family: 0i32, ai_socktype: 0i32, ai_protocol: 0i32, ai_addrlen: 0u32,
      ai_canonname: ptr::null(), ai_addr: ptr::null(), ai_next: ptr::null()}
 }
 
 #[cfg(target_os = "linux")]
-fn mk_default_addrinfo() -> addrinfo {
+pub fn mk_default_addrinfo() -> addrinfo {
     {ai_flags: 0i32, ai_family: 0i32, ai_socktype: 0i32, ai_protocol: 0i32, ai_addrlen: 0u32,
      ai_addr: ptr::null(), ai_canonname: ptr::null(), ai_next: ptr::null()}
 }
 
-fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~str> unsafe {
+pub fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~str> unsafe {
     let hints = {ai_family: AF_UNSPEC, ai_socktype: SOCK_STREAM, ..mk_default_addrinfo()};
     let servinfo: *addrinfo = ptr::null();
     let s_port = #fmt["%u", port as uint];
@@ -218,7 +218,7 @@ fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~str> u
     result
 }
 
-fn inet_ntop(address: &addrinfo) -> ~str unsafe {
+pub fn inet_ntop(address: &addrinfo) -> ~str unsafe {
     let buffer = vec::from_elem(INET6_ADDRSTRLEN as uint + 1u, 0u8);
     c::inet_ntop(address.ai_family,
         if address.ai_family == AF_INET {
@@ -235,7 +235,7 @@ fn inet_ntop(address: &addrinfo) -> ~str unsafe {
 
 // TODO: there is no portable way to get errno from rust so, for now, we'll just write them to stderr
 // See #2269.
-fn log_err(mesg: &str)
+pub fn log_err(mesg: &str)
 {
     do str::as_c_str(mesg) |buffer| {libc::perror(buffer)};
 }
@@ -246,12 +246,12 @@ struct socket_handle {
 	drop {c::close(self.sockfd);}
 }
 
-fn socket_handle(x: libc::c_int) -> socket_handle
+pub fn socket_handle(x: libc::c_int) -> socket_handle
 {
     socket_handle {sockfd: x}
 }
 
-fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
+pub fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
     let err = for getaddrinfo(host, port) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
         {
@@ -280,7 +280,7 @@ fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
     }
 }
 
-fn connect(host: &str, port: u16) -> result<@socket_handle, ~str> {
+pub fn connect(host: &str, port: u16) -> result<@socket_handle, ~str> {
     info!("connecting to %s:%?", host, port);
     let err = for getaddrinfo(host, port) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
@@ -306,7 +306,7 @@ fn connect(host: &str, port: u16) -> result<@socket_handle, ~str> {
     }
 }
 
-fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, ~str> {
+pub fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, ~str> {
     if c::listen(sock.sockfd, backlog) == -1_i32 {
         log_err(~"listen error");
         result::Err(~"listen failed")
@@ -316,7 +316,7 @@ fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, ~str> {
 }
 
 // Returns a fd to allow multi-threaded servers to send the fd to a task.
-fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: ~str}, ~str> unsafe {
+pub fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: ~str}, ~str> unsafe {
     info!("accepting with socket %?", sock.sockfd);
     let addr = mk_default_storage();
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
@@ -338,7 +338,7 @@ fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: ~str}, 
     }
 }
 
-fn send(sock: @socket_handle, buf: &[u8]) -> result<uint, ~str> unsafe {
+pub fn send(sock: @socket_handle, buf: &[u8]) -> result<uint, ~str> unsafe {
     let amt = c::send(sock.sockfd, vec::raw::to_ptr(buf),
                       vec::len(buf) as libc::c_int, 0i32);
     if amt == -1_i32 {
@@ -350,7 +350,7 @@ fn send(sock: @socket_handle, buf: &[u8]) -> result<uint, ~str> unsafe {
 }
 
 // Useful for sending str data (where you want to use as_buf instead of as_buffer).
-fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, ~str> unsafe {
+pub fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, ~str> unsafe {
     let amt = c::send(sock.sockfd, buf, len as libc::c_int, 0i32);
     if amt == -1_i32 {
         log_err(#fmt["send error"]);
@@ -360,7 +360,7 @@ fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, ~str> uns
     }
 }
 
-fn recv(sock: @socket_handle, len: uint) -> result<{buffer: ~[u8], bytes: uint}, ~str> unsafe {
+pub fn recv(sock: @socket_handle, len: uint) -> result<{buffer: ~[u8], bytes: uint}, ~str> unsafe {
     let buf = vec::from_elem(len + 1u, 0u8);
     let bytes = c::recv(sock.sockfd, vec::raw::to_ptr(buf), len as libc::c_int, 0i32);
     if bytes == -1_i32 {
@@ -371,7 +371,7 @@ fn recv(sock: @socket_handle, len: uint) -> result<{buffer: ~[u8], bytes: uint},
     }
 }
 
-fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
+pub fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
     -> result<uint, ~str> unsafe {
     let (to_saddr, to_len) = match *to {
       ipv4(s)  => { (*(ptr::addr_of(s) as *sockaddr_storage),
@@ -391,7 +391,7 @@ fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
     }
 }
 
-fn recvfrom(sock: @socket_handle, len: uint)
+pub fn recvfrom(sock: @socket_handle, len: uint)
     -> result<(~[u8], uint, sockaddr), ~str> unsafe {
     let from_saddr = mk_default_storage();
     let unused: socklen_t = 0u32;
@@ -413,7 +413,7 @@ fn recvfrom(sock: @socket_handle, len: uint)
     }
 }
 
-fn setsockopt(sock: @socket_handle, option: int, value: int)
+pub fn setsockopt(sock: @socket_handle, option: int, value: int)
     -> result<libc::c_int, ~str> unsafe {
     let val = value;
     let r = c::setsockopt(sock.sockfd, SOL_SOCKET, option as libc::c_int,
@@ -427,29 +427,29 @@ fn setsockopt(sock: @socket_handle, option: int, value: int)
     }
 }
 
-fn enablesockopt(sock: @socket_handle, option: int)
+pub fn enablesockopt(sock: @socket_handle, option: int)
     -> result<libc::c_int, ~str> unsafe {
     setsockopt(sock, option, 1)
 }
 
-fn disablesockopt(sock: @socket_handle, option: int)
+pub fn disablesockopt(sock: @socket_handle, option: int)
     -> result<libc::c_int, ~str> unsafe {
     setsockopt(sock, option, 0)
 }
 
-fn htons(hostshort: u16) -> u16 {
+pub fn htons(hostshort: u16) -> u16 {
     c::htons(hostshort)
 }
 
-fn htonl(hostlong: u32) -> u32 {
+pub fn htonl(hostlong: u32) -> u32 {
     c::htonl(hostlong)
 }
 
-fn ntohs(netshort: u16) -> u16 {
+pub fn ntohs(netshort: u16) -> u16 {
     c::ntohs(netshort)
 }
 
-fn ntohl(netlong: u32) -> u32 {
+pub fn ntohl(netlong: u32) -> u32 {
     c::ntohl(netlong)
 }
 
