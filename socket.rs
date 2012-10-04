@@ -440,7 +440,7 @@ pub fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
 pub fn recvfrom(sock: @socket_handle, len: uint)
     -> result<(~[u8], uint, sockaddr), ~str> unsafe {
     let from_saddr = mk_default_storage();
-    let unused: socklen_t = 0u32;
+    let unused: socklen_t = sys::size_of::<sockaddr_storage>() as socklen_t;
     let buf = vec::from_elem(len + 1u, 0u8);
     let amt = c::recvfrom(sock.sockfd, vec::raw::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
                           ptr::addr_of(from_saddr), ptr::addr_of(unused));
