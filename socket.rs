@@ -46,41 +46,42 @@ extern mod c {
     fn freeaddrinfo(ai: *addrinfo);
 }
 
-const SOCK_STREAM: libc::c_int = 1_i32;
-const SOCK_DGRAM: libc::c_int = 2_i32;
-const SOCK_RAW: libc::c_int = 3_i32;
+pub const SOCK_UNSPEC: libc::c_int = 0_i32;
+pub const SOCK_STREAM: libc::c_int = 1_i32;
+pub const SOCK_DGRAM: libc::c_int = 2_i32;
+pub const SOCK_RAW: libc::c_int = 3_i32;
 
-const SOL_SOCKET: libc::c_int = 0xffff_i32;
+pub const SOL_SOCKET: libc::c_int = 0xffff_i32;
 
-const SO_DEBUG: libc::c_int = 0x0001_i32;             // turn on debugging info recording
-const SO_ACCEPTCONN: libc::c_int = 0x0002_i32;   // socket has had listen()
-const SO_REUSEADDR: libc::c_int = 0x0004_i32;   // allow local address reuse
-const SO_KEEPALIVE: libc::c_int = 0x0008_i32;   // keep connections alive
-const SO_DONTROUTE: libc::c_int = 0x0010_i32;   // just use interface addresses
-const SO_BROADCAST: libc::c_int = 0x0020_i32;   // permit sending of broadcast msgs
-const SO_LINGER: libc::c_int = 0x1080_i32;   // linger on close if data present (in seconds)
-const SO_OOBINLINE: libc::c_int = 0x0100_i32;   // leave received OOB data in line
-const SO_SNDBUF: libc::c_int = 0x1001_i32;   // send buffer size
-const SO_RCVBUF: libc::c_int = 0x1002_i32;   // receive buffer size
-const SO_SNDLOWAT: libc::c_int = 0x1003_i32;   // send low-water mark
-const SO_RCVLOWAT: libc::c_int = 0x1004_i32;   // receive low-water mark
-const SO_SNDTIMEO: libc::c_int = 0x1005_i32;   // send timeout
-const SO_RCVTIMEO: libc::c_int = 0x1006_i32;   // receive timeout
-const SO_ERROR: libc::c_int = 0x1007_i32;   // get error status and clear
-const SO_TYPE	: libc::c_int = 0x1008_i32;   // get socket type
+pub const SO_DEBUG: libc::c_int = 0x0001_i32;             // turn on debugging info recording
+pub const SO_ACCEPTCONN: libc::c_int = 0x0002_i32;   // socket has had listen()
+pub const SO_REUSEADDR: libc::c_int = 0x0004_i32;   // allow local address reuse
+pub const SO_KEEPALIVE: libc::c_int = 0x0008_i32;   // keep connections alive
+pub const SO_DONTROUTE: libc::c_int = 0x0010_i32;   // just use interface addresses
+pub const SO_BROADCAST: libc::c_int = 0x0020_i32;   // permit sending of broadcast msgs
+pub const SO_LINGER: libc::c_int = 0x1080_i32;   // linger on close if data present (in seconds)
+pub const SO_OOBINLINE: libc::c_int = 0x0100_i32;   // leave received OOB data in line
+pub const SO_SNDBUF: libc::c_int = 0x1001_i32;   // send buffer size
+pub const SO_RCVBUF: libc::c_int = 0x1002_i32;   // receive buffer size
+pub const SO_SNDLOWAT: libc::c_int = 0x1003_i32;   // send low-water mark
+pub const SO_RCVLOWAT: libc::c_int = 0x1004_i32;   // receive low-water mark
+pub const SO_SNDTIMEO: libc::c_int = 0x1005_i32;   // send timeout
+pub const SO_RCVTIMEO: libc::c_int = 0x1006_i32;   // receive timeout
+pub const SO_ERROR: libc::c_int = 0x1007_i32;   // get error status and clear
+pub const SO_TYPE	: libc::c_int = 0x1008_i32;   // get socket type
 // TODO: there are a bunch of Linux specific socket options that should be added
 
-const AF_UNSPEC: libc::c_int = 0_i32;
-const AF_UNIX: libc::c_int = 1_i32;
-const AF_INET: libc::c_int = 2_i32;
-const AF_INET6: libc::c_int = 30_i32;
+pub const AF_UNSPEC: libc::c_int = 0_i32;
+pub const AF_UNIX: libc::c_int = 1_i32;
+pub const AF_INET: libc::c_int = 2_i32;
+pub const AF_INET6: libc::c_int = 30_i32;
 
-const AI_PASSIVE: libc::c_int = 0x0001_i32;
-const AI_CANONNAME: libc::c_int = 0x0002_i32;
-const AI_NUMERICHOST: libc::c_int = 0x0004_i32;
-const AI_NUMERICSERV: libc::c_int = 0x1000_i32;
+pub const AI_PASSIVE: libc::c_int = 0x0001_i32;
+pub const AI_CANONNAME: libc::c_int = 0x0002_i32;
+pub const AI_NUMERICHOST: libc::c_int = 0x0004_i32;
+pub const AI_NUMERICSERV: libc::c_int = 0x1000_i32;
 
-const INET6_ADDRSTRLEN: u32 = 46;
+pub const INET6_ADDRSTRLEN: u32 = 46;
 
 // Type names are not CamelCase to match the C versions.
 type socklen_t = u32;    // 32-bit on Mac (__darwin_socklen_t in _types.h) and Ubuntu Linux (__socklen_t in types.h)
@@ -191,8 +192,19 @@ pub fn mk_default_addrinfo() -> addrinfo {
      ai_addr: ptr::null(), ai_canonname: ptr::null(), ai_next: ptr::null()}
 }
 
-pub fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~str> unsafe {
-    let hints = {ai_family: AF_UNSPEC, ai_socktype: SOCK_STREAM, ..mk_default_addrinfo()};
+pub fn getaddrinfo(host: &str, port: u16, socktype: libc::c_int, f: fn(addrinfo) -> bool) 
+	-> Option<~str> unsafe 
+{
+	let st = if socktype == SOCK_UNSPEC {
+		io::println(">>> Autoset to SOCK_STREAM");
+		SOCK_STREAM 
+	}
+	else {
+		io::println(">>> Sock type provided");
+		socktype
+	};
+
+    let hints = {ai_family: AF_UNSPEC, ai_socktype: st, ..mk_default_addrinfo()};
     let servinfo: *addrinfo = ptr::null();
     let s_port = #fmt["%u", port as uint];
     let mut result = option::None;
@@ -251,8 +263,42 @@ pub fn socket_handle(x: libc::c_int) -> socket_handle
     socket_handle {sockfd: x}
 }
 
+pub fn bind_socket2(host: &str, port: u16, protocol: libc::c_int) -> 
+	result<@socket_handle, ~str> unsafe 
+{
+    let err = for getaddrinfo(host, port, protocol) |ai| {
+        if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
+        {
+            let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
+            if sockfd != -1_i32 {
+                let val = 1;
+                let _ = c::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,    // this shouldn't be critical so we'll ignore errors from it
+                                      cast::reinterpret_cast(&ptr::addr_of(val)),
+                                      sys::size_of::<int>() as socklen_t);
+                
+                if c::bind(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
+                    c::close(sockfd);
+                } else {
+                    debug!("   bound to socket %?", sockfd);
+                    return result::Ok(@socket_handle(sockfd));
+                }
+            } else {
+                log_err(#fmt["socket(%s) error", inet_ntop(&ai)]);
+            }
+        }
+    };
+    match err
+    {
+    	    option::Some(mesg)  => {result::Err(copy(mesg))}
+         option::None               => {result::Err(~"bind failed to find an address")}
+    }
+}
+
+
+
+
 pub fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
-    let err = for getaddrinfo(host, port) |ai| {
+    let err = for getaddrinfo(host, port, SOCK_STREAM) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
         {
             let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
@@ -282,7 +328,7 @@ pub fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe
 
 pub fn connect(host: &str, port: u16) -> result<@socket_handle, ~str> {
     info!("connecting to %s:%?", host, port);
-    let err = for getaddrinfo(host, port) |ai| {
+    let err = for getaddrinfo(host, port, SOCK_STREAM) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
         {
             debug!("   trying %s", inet_ntop(&ai));
