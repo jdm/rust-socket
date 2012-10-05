@@ -263,42 +263,10 @@ pub fn socket_handle(x: libc::c_int) -> socket_handle
     socket_handle {sockfd: x}
 }
 
-pub fn bind_socket2(host: &str, port: u16, protocol: libc::c_int) -> 
+pub fn bind_socket(host: &str, port: u16, protocol: libc::c_int) -> 
 	result<@socket_handle, ~str> unsafe 
 {
     let err = for getaddrinfo(host, port, protocol) |ai| {
-        if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
-        {
-            let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
-            if sockfd != -1_i32 {
-                let val = 1;
-                let _ = c::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,    // this shouldn't be critical so we'll ignore errors from it
-                                      cast::reinterpret_cast(&ptr::addr_of(val)),
-                                      sys::size_of::<int>() as socklen_t);
-                
-                if c::bind(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
-                    c::close(sockfd);
-                } else {
-                    debug!("   bound to socket %?", sockfd);
-                    return result::Ok(@socket_handle(sockfd));
-                }
-            } else {
-                log_err(#fmt["socket(%s) error", inet_ntop(&ai)]);
-            }
-        }
-    };
-    match err
-    {
-    	    option::Some(mesg)  => {result::Err(copy(mesg))}
-         option::None               => {result::Err(~"bind failed to find an address")}
-    }
-}
-
-
-
-
-pub fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
-    let err = for getaddrinfo(host, port, SOCK_STREAM) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
         {
             let sockfd = c::socket(ai.ai_family, ai.ai_socktype, ai.ai_protocol);
@@ -560,7 +528,7 @@ fn test_server_client()
     let port = 48006u16;
     let test_str = ~"testing";
     
-    match bind_socket(~"localhost", port)
+    match bind_socket(~"localhost", port, SOCK_STREAM)
     {
         result::Ok(s) =>
         {
