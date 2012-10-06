@@ -477,7 +477,7 @@ fn test_server_client()
                  result::Ok(handle) =>
                  {
                      let res = str::as_buf(ts, |buf, _len| {send_buf(handle, buf, str::len(ts))});
-                     assert result::is_ok(res);
+                     assert result::is_ok(&res);
                  }
                  result::Err(err) =>
                  {
