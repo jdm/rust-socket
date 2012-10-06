@@ -196,11 +196,9 @@ pub fn getaddrinfo(host: &str, port: u16, socktype: libc::c_int, f: fn(addrinfo)
 	-> Option<~str> unsafe 
 {
 	let st = if socktype == SOCK_UNSPEC {
-		io::println(">>> Autoset to SOCK_STREAM");
 		SOCK_STREAM 
 	}
 	else {
-		io::println(">>> Sock type provided");
 		socktype
 	};
 
