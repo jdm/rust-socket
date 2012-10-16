@@ -17,5 +17,5 @@
 
 extern mod std;
 
-mod socket;
+pub mod socket;
 
