@@ -1,4 +1,4 @@
-// Last built with rust commit 9c98d0f99b44e1c57bdd60881518140e2593a5a4
+// Last built with rust commit 39c0d3591e0326874b7263a621ce09ecd64f0eb2 (0.4)
 use result = result::Result;
 use core::rand;
 
@@ -147,7 +147,7 @@ fn sockaddr_to_string(saddr: &sockaddr) -> ~str
                 let buffer = vec::from_elem(INET6_ADDRSTRLEN as uint + 1u, 0u8);
                 c::inet_ntop(
                     AF_INET,
-                    cast::reinterpret_cast(&ptr::addr_of(addr4.sin_addr)),
+                    cast::reinterpret_cast(&ptr::addr_of(&addr4.sin_addr)),
                     vec::raw::to_ptr(buffer),
                     INET6_ADDRSTRLEN);
                 str::raw::from_buf(vec::raw::to_ptr(buffer))
@@ -157,7 +157,7 @@ fn sockaddr_to_string(saddr: &sockaddr) -> ~str
                 let buffer = vec::from_elem(INET6_ADDRSTRLEN as uint + 1u, 0u8);
                 c::inet_ntop(
                     AF_INET6,
-                    cast::reinterpret_cast(&ptr::addr_of(addr6.sin6_addr)),
+                    cast::reinterpret_cast(&ptr::addr_of(&addr6.sin6_addr)),
                     vec::raw::to_ptr(buffer),
                     INET6_ADDRSTRLEN);
                 str::raw::from_buf(vec::raw::to_ptr(buffer))
@@ -198,8 +198,8 @@ fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~str> u
     let mut result = option::None;
     do str::as_c_str(host) |host| {
         do str::as_c_str(s_port) |port| {
-            let status = c::getaddrinfo(host, port, ptr::addr_of(hints),
-                                        ptr::addr_of(servinfo));
+            let status = c::getaddrinfo(host, port, ptr::addr_of(&hints),
+                                        ptr::addr_of(&servinfo));
             if status == 0i32 {
                 let mut p = servinfo;
                 while p != ptr::null() {
@@ -223,10 +223,10 @@ fn inet_ntop(address: &addrinfo) -> ~str unsafe {
     c::inet_ntop(address.ai_family,
         if address.ai_family == AF_INET {
             let addr: *sockaddr4_in = cast::reinterpret_cast(&address.ai_addr);
-            cast::reinterpret_cast(&ptr::addr_of((*addr).sin_addr))
+            cast::reinterpret_cast(&ptr::addr_of(&(*addr).sin_addr))
         } else {
             let addr: *sockaddr6_in = cast::reinterpret_cast(&address.ai_addr);
-            cast::reinterpret_cast(&ptr::addr_of((*addr).sin6_addr))
+            cast::reinterpret_cast(&ptr::addr_of(&(*addr).sin6_addr))
         },
         vec::raw::to_ptr(buffer), INET6_ADDRSTRLEN);
     
@@ -259,7 +259,7 @@ fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
             if sockfd != -1_i32 {
                 let val = 1;
                 let _ = c::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,    // this shouldn't be critical so we'll ignore errors from it
-                                      cast::reinterpret_cast(&ptr::addr_of(val)),
+                                      cast::reinterpret_cast(&ptr::addr_of(&val)),
                                       sys::size_of::<int>() as socklen_t);
                 
                 if c::bind(sockfd, ai.ai_addr, ai.ai_addrlen) == -1_i32 {
@@ -320,18 +320,18 @@ fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: ~str}, 
     info!("accepting with socket %?", sock.sockfd);
     let addr = mk_default_storage();
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
-    let fd = c::accept(sock.sockfd, ptr::addr_of(addr), ptr::addr_of(unused));
+    let fd = c::accept(sock.sockfd, ptr::addr_of(&addr), ptr::addr_of(&unused));
     
     if fd == -1_i32 {
         log_err(#fmt["accept error"]);
         result::Err(~"accept failed")
     } else {
         let their_addr = if addr.ss_family as u8 == AF_INET as u8 {
-                       ipv4(*(ptr::addr_of(addr) as *sockaddr4_in))
+                       ipv4(*(ptr::addr_of(&addr) as *sockaddr4_in))
                    } else if addr.ss_family as u8 == AF_INET6 as u8 {
-                       ipv6(*(ptr::addr_of(addr) as *sockaddr6_in))
+                       ipv6(*(ptr::addr_of(&addr) as *sockaddr6_in))
                    } else {
-                       unix(*(ptr::addr_of(addr) as *sockaddr_basic))
+                       unix(*(ptr::addr_of(&addr) as *sockaddr_basic))
                    };
         info!("accepted socket %? (%s)", fd, sockaddr_to_string(&their_addr));
         result::Ok({fd: fd, remote_addr: sockaddr_to_string(&their_addr)})
@@ -374,15 +374,15 @@ fn recv(sock: @socket_handle, len: uint) -> result<{buffer: ~[u8], bytes: uint},
 fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
     -> result<uint, ~str> unsafe {
     let (to_saddr, to_len) = match *to {
-      ipv4(s)  => { (*(ptr::addr_of(s) as *sockaddr_storage),
+      ipv4(s)  => { (*(ptr::addr_of(&s) as *sockaddr_storage),
                  sys::size_of::<sockaddr4_in>()) }
-      ipv6(s)  => { (*(ptr::addr_of(s) as *sockaddr_storage),
+      ipv6(s)  => { (*(ptr::addr_of(&s) as *sockaddr_storage),
                  sys::size_of::<sockaddr6_in>()) }
-      unix(s)  => { (*(ptr::addr_of(s) as *sockaddr_storage),
+      unix(s)  => { (*(ptr::addr_of(&s) as *sockaddr_storage),
                  sys::size_of::<sockaddr_basic>()) }
     };
     let amt = c::sendto(sock.sockfd, vec::raw::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
-                        ptr::addr_of(to_saddr), to_len as u32);
+                        ptr::addr_of(&to_saddr), to_len as u32);
     if amt == -1_i32 {
         log_err(#fmt["sendto error"]);
         result::Err(~"sendto failed")
@@ -397,18 +397,18 @@ fn recvfrom(sock: @socket_handle, len: uint)
     let unused: socklen_t = 0u32;
     let buf = vec::from_elem(len + 1u, 0u8);
     let amt = c::recvfrom(sock.sockfd, vec::raw::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
-                          ptr::addr_of(from_saddr), ptr::addr_of(unused));
+                          ptr::addr_of(&from_saddr), ptr::addr_of(&unused));
     if amt == -1_i32 {
         log_err(#fmt["recvfrom error"]);
         result::Err(~"recvfrom failed")
     } else {
         result::Ok((buf, amt as uint,
                    if from_saddr.ss_family as u8 == AF_INET as u8 {
-                       ipv4(*(ptr::addr_of(from_saddr) as *sockaddr4_in))
+                       ipv4(*(ptr::addr_of(&from_saddr) as *sockaddr4_in))
                    } else if from_saddr.ss_family as u8 == AF_INET6 as u8 {
-                       ipv6(*(ptr::addr_of(from_saddr) as *sockaddr6_in))
+                       ipv6(*(ptr::addr_of(&from_saddr) as *sockaddr6_in))
                    } else {
-                       unix(*(ptr::addr_of(from_saddr) as *sockaddr_basic))
+                       unix(*(ptr::addr_of(&from_saddr) as *sockaddr_basic))
                    }))
     }
 }
@@ -417,7 +417,7 @@ fn setsockopt(sock: @socket_handle, option: int, value: int)
     -> result<libc::c_int, ~str> unsafe {
     let val = value;
     let r = c::setsockopt(sock.sockfd, SOL_SOCKET, option as libc::c_int,
-                          cast::reinterpret_cast(&ptr::addr_of(val)),
+                          cast::reinterpret_cast(&ptr::addr_of(&val)),
                           sys::size_of::<int>() as socklen_t);
     if r == -1_i32 {
         log_err(#fmt["setsockopt error"]);
@@ -465,7 +465,7 @@ fn test_server_client()
                  result::Ok(handle) =>
                  {
                      let res = str::as_buf(ts, |buf, _len| {send_buf(handle, buf, str::len(ts))});
-                     assert result::is_ok(res);
+                     assert result::is_ok(&res);
                  }
                  result::Err(err) =>
                  {
@@ -548,7 +548,7 @@ fn test_getaddrinfo_localhost() {
     let port = 48007u16;
     do str::as_c_str(~"localhost") |host| {
         do str::as_c_str(#fmt["%u", port as uint]) |p| {
-            let status = c::getaddrinfo(host, p, ptr::addr_of(hints), ptr::addr_of(servinfo));
+            let status = c::getaddrinfo(host, p, ptr::addr_of(&hints), ptr::addr_of(&servinfo));
             assert status == 0_i32;
             unsafe {
                 assert servinfo != ptr::null();
