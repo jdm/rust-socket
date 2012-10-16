@@ -12,7 +12,7 @@ export SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SO_DEBUG, SO_ACCEPTCONN, SO_REUSEADDR,
        AF_UNSPEC, AF_UNIX, AF_INET, AF_INET6, AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST,
        AI_NUMERICSERV, INET6_ADDRSTRLEN;
        
-type c_str = *libc::c_char;
+pub type c_str = *libc::c_char;
 
 #[nolink]
 extern mod c {
@@ -46,54 +46,54 @@ extern mod c {
     fn freeaddrinfo(ai: *addrinfo);
 }
 
-const SOCK_STREAM: libc::c_int = 1_i32;
-const SOCK_DGRAM: libc::c_int = 2_i32;
-const SOCK_RAW: libc::c_int = 3_i32;
+pub const SOCK_STREAM: libc::c_int = 1_i32;
+pub const SOCK_DGRAM: libc::c_int = 2_i32;
+pub const SOCK_RAW: libc::c_int = 3_i32;
 
-const SOL_SOCKET: libc::c_int = 0xffff_i32;
+pub const SOL_SOCKET: libc::c_int = 0xffff_i32;
 
-const SO_DEBUG: libc::c_int = 0x0001_i32;             // turn on debugging info recording
-const SO_ACCEPTCONN: libc::c_int = 0x0002_i32;   // socket has had listen()
-const SO_REUSEADDR: libc::c_int = 0x0004_i32;   // allow local address reuse
-const SO_KEEPALIVE: libc::c_int = 0x0008_i32;   // keep connections alive
-const SO_DONTROUTE: libc::c_int = 0x0010_i32;   // just use interface addresses
-const SO_BROADCAST: libc::c_int = 0x0020_i32;   // permit sending of broadcast msgs
-const SO_LINGER: libc::c_int = 0x1080_i32;   // linger on close if data present (in seconds)
-const SO_OOBINLINE: libc::c_int = 0x0100_i32;   // leave received OOB data in line
-const SO_SNDBUF: libc::c_int = 0x1001_i32;   // send buffer size
-const SO_RCVBUF: libc::c_int = 0x1002_i32;   // receive buffer size
-const SO_SNDLOWAT: libc::c_int = 0x1003_i32;   // send low-water mark
-const SO_RCVLOWAT: libc::c_int = 0x1004_i32;   // receive low-water mark
-const SO_SNDTIMEO: libc::c_int = 0x1005_i32;   // send timeout
-const SO_RCVTIMEO: libc::c_int = 0x1006_i32;   // receive timeout
-const SO_ERROR: libc::c_int = 0x1007_i32;   // get error status and clear
-const SO_TYPE	: libc::c_int = 0x1008_i32;   // get socket type
+pub const SO_DEBUG: libc::c_int = 0x0001_i32;             // turn on debugging info recording
+pub const SO_ACCEPTCONN: libc::c_int = 0x0002_i32;   // socket has had listen()
+pub const SO_REUSEADDR: libc::c_int = 0x0004_i32;   // allow local address reuse
+pub const SO_KEEPALIVE: libc::c_int = 0x0008_i32;   // keep connections alive
+pub const SO_DONTROUTE: libc::c_int = 0x0010_i32;   // just use interface addresses
+pub const SO_BROADCAST: libc::c_int = 0x0020_i32;   // permit sending of broadcast msgs
+pub const SO_LINGER: libc::c_int = 0x1080_i32;   // linger on close if data present (in seconds)
+pub const SO_OOBINLINE: libc::c_int = 0x0100_i32;   // leave received OOB data in line
+pub const SO_SNDBUF: libc::c_int = 0x1001_i32;   // send buffer size
+pub const SO_RCVBUF: libc::c_int = 0x1002_i32;   // receive buffer size
+pub const SO_SNDLOWAT: libc::c_int = 0x1003_i32;   // send low-water mark
+pub const SO_RCVLOWAT: libc::c_int = 0x1004_i32;   // receive low-water mark
+pub const SO_SNDTIMEO: libc::c_int = 0x1005_i32;   // send timeout
+pub const SO_RCVTIMEO: libc::c_int = 0x1006_i32;   // receive timeout
+pub const SO_ERROR: libc::c_int = 0x1007_i32;   // get error status and clear
+pub const SO_TYPE	: libc::c_int = 0x1008_i32;   // get socket type
 // TODO: there are a bunch of Linux specific socket options that should be added
 
-const AF_UNSPEC: libc::c_int = 0_i32;
-const AF_UNIX: libc::c_int = 1_i32;
-const AF_INET: libc::c_int = 2_i32;
-const AF_INET6: libc::c_int = 30_i32;
+pub const AF_UNSPEC: libc::c_int = 0_i32;
+pub const AF_UNIX: libc::c_int = 1_i32;
+pub const AF_INET: libc::c_int = 2_i32;
+pub const AF_INET6: libc::c_int = 30_i32;
 
-const AI_PASSIVE: libc::c_int = 0x0001_i32;
-const AI_CANONNAME: libc::c_int = 0x0002_i32;
-const AI_NUMERICHOST: libc::c_int = 0x0004_i32;
-const AI_NUMERICSERV: libc::c_int = 0x1000_i32;
+pub const AI_PASSIVE: libc::c_int = 0x0001_i32;
+pub const AI_CANONNAME: libc::c_int = 0x0002_i32;
+pub const AI_NUMERICHOST: libc::c_int = 0x0004_i32;
+pub const AI_NUMERICSERV: libc::c_int = 0x1000_i32;
 
-const INET6_ADDRSTRLEN: u32 = 46;
+pub const INET6_ADDRSTRLEN: u32 = 46;
 
 // Type names are not CamelCase to match the C versions.
-type socklen_t = u32;    // 32-bit on Mac (__darwin_socklen_t in _types.h) and Ubuntu Linux (__socklen_t in types.h)
-type x = u8;
+pub type socklen_t = u32;    // 32-bit on Mac (__darwin_socklen_t in _types.h) and Ubuntu Linux (__socklen_t in types.h)
+pub type x = u8;
 
-type sockaddr_basic = {sin_family: i16, padding: (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)};
-type sockaddr4_in = {sin_family: i16, sin_port: u16, sin_addr: in4_addr,
+pub type sockaddr_basic = {sin_family: i16, padding: (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)};
+pub type sockaddr4_in = {sin_family: i16, sin_port: u16, sin_addr: in4_addr,
                      sin_zero: (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)};
-type in4_addr = {s_addr: libc::c_uint};
-type sockaddr6_in = {sin6_family: u16, sin6_port: u16, sin6_flowinfo: u32, sin6_addr: in6_addr, sin6_scope_id: u32};
-type in6_addr = {s6_addr: (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)};
+pub type in4_addr = {s_addr: libc::c_uint};
+pub type sockaddr6_in = {sin6_family: u16, sin6_port: u16, sin6_flowinfo: u32, sin6_addr: in6_addr, sin6_scope_id: u32};
+pub type in6_addr = {s6_addr: (x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)};
 
-enum sockaddr {
+pub enum sockaddr {
     unix(sockaddr_basic),
     ipv4(sockaddr4_in),
     ipv6(sockaddr6_in)
@@ -106,15 +106,15 @@ enum sockaddr {
 // always uses pointers to sockaddr_storage.
 #[cfg(target_os = "freebsd")]
 #[cfg(target_os = "macos")]
-type sockaddr_storage = {ss_len: u8, ss_family: u8, contents: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)};
+pub type sockaddr_storage = {ss_len: u8, ss_family: u8, contents: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)};
 
 #[cfg(target_os = "linux")]
-type sockaddr_storage = {ss_family: libc::c_ushort, contents: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)};
+pub type sockaddr_storage = {ss_family: libc::c_ushort, contents: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)};
 
 #[cfg(target_os = "freebsd")]
 #[cfg(target_os = "win32")]
 #[cfg(target_os = "macos")]
-type addrinfo = {ai_flags: libc::c_int,
+pub type addrinfo = {ai_flags: libc::c_int,
                  ai_family: libc::c_int,
                  ai_socktype: libc::c_int,
                  ai_protocol: libc::c_int,
@@ -123,7 +123,7 @@ type addrinfo = {ai_flags: libc::c_int,
                  ai_addr: *sockaddr_storage,
                  ai_next: *u8}; //XXX ai_next should be *addrinfo
 #[cfg(target_os = "linux")]
-type addrinfo = {ai_flags: libc::c_int,
+pub type addrinfo = {ai_flags: libc::c_int,
                  ai_family: libc::c_int,
                  ai_socktype: libc::c_int,
                  ai_protocol: libc::c_int,
@@ -132,7 +132,7 @@ type addrinfo = {ai_flags: libc::c_int,
                  ai_canonname: *u8,
                  ai_next: *u8}; //XXX ai_next should be *addrinfo
 
-fn sockaddr_to_string(saddr: &sockaddr) -> ~str
+pub fn sockaddr_to_string(saddr: &sockaddr) -> ~str
 {
     unsafe
     {
@@ -168,30 +168,30 @@ fn sockaddr_to_string(saddr: &sockaddr) -> ~str
 
 #[cfg(target_os = "freebsd")]
 #[cfg(target_os = "macos")]
-fn mk_default_storage() -> sockaddr_storage {
+pub fn mk_default_storage() -> sockaddr_storage {
     {ss_len: 0u8, ss_family: 0u8, contents: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)}
 }
 
 #[cfg(target_os = "linux")]
-fn mk_default_storage() -> sockaddr_storage {
+pub fn mk_default_storage() -> sockaddr_storage {
     {ss_family: 0, contents: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)}
 }
 
 #[cfg(target_os = "freebsd")]
 #[cfg(target_os = "win32")]
 #[cfg(target_os = "macos")]
-fn mk_default_addrinfo() -> addrinfo {
+pub fn mk_default_addrinfo() -> addrinfo {
     {ai_flags: 0i32, ai_family: 0i32, ai_socktype: 0i32, ai_protocol: 0i32, ai_addrlen: 0u32,
      ai_canonname: ptr::null(), ai_addr: ptr::null(), ai_next: ptr::null()}
 }
 
 #[cfg(target_os = "linux")]
-fn mk_default_addrinfo() -> addrinfo {
+pub fn mk_default_addrinfo() -> addrinfo {
     {ai_flags: 0i32, ai_family: 0i32, ai_socktype: 0i32, ai_protocol: 0i32, ai_addrlen: 0u32,
      ai_addr: ptr::null(), ai_canonname: ptr::null(), ai_next: ptr::null()}
 }
 
-fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~str> unsafe {
+pub fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~str> unsafe {
     let hints = {ai_family: AF_UNSPEC, ai_socktype: SOCK_STREAM, ..mk_default_addrinfo()};
     let servinfo: *addrinfo = ptr::null();
     let s_port = #fmt["%u", port as uint];
@@ -218,7 +218,7 @@ fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~str> u
     result
 }
 
-fn inet_ntop(address: &addrinfo) -> ~str unsafe {
+pub fn inet_ntop(address: &addrinfo) -> ~str unsafe {
     let buffer = vec::from_elem(INET6_ADDRSTRLEN as uint + 1u, 0u8);
     c::inet_ntop(address.ai_family,
         if address.ai_family == AF_INET {
@@ -235,23 +235,23 @@ fn inet_ntop(address: &addrinfo) -> ~str unsafe {
 
 // TODO: there is no portable way to get errno from rust so, for now, we'll just write them to stderr
 // See #2269.
-fn log_err(mesg: &str)
+pub fn log_err(mesg: &str)
 {
     do str::as_c_str(mesg) |buffer| {libc::perror(buffer)};
 }
 
 // TODO: Isn't socket::socket_handle redundant?
-struct socket_handle {
+pub struct socket_handle {
 	sockfd: libc::c_int,
 	drop {c::close(self.sockfd);}
 }
 
-fn socket_handle(x: libc::c_int) -> socket_handle
+pub fn socket_handle(x: libc::c_int) -> socket_handle
 {
     socket_handle {sockfd: x}
 }
 
-fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
+pub fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
     let err = for getaddrinfo(host, port) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
         {
@@ -280,7 +280,7 @@ fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
     }
 }
 
-fn connect(host: &str, port: u16) -> result<@socket_handle, ~str> {
+pub fn connect(host: &str, port: u16) -> result<@socket_handle, ~str> {
     info!("connecting to %s:%?", host, port);
     let err = for getaddrinfo(host, port) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
@@ -306,7 +306,7 @@ fn connect(host: &str, port: u16) -> result<@socket_handle, ~str> {
     }
 }
 
-fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, ~str> {
+pub fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, ~str> {
     if c::listen(sock.sockfd, backlog) == -1_i32 {
         log_err(~"listen error");
         result::Err(~"listen failed")
@@ -316,7 +316,7 @@ fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, ~str> {
 }
 
 // Returns a fd to allow multi-threaded servers to send the fd to a task.
-fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: ~str}, ~str> unsafe {
+pub fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: ~str}, ~str> unsafe {
     info!("accepting with socket %?", sock.sockfd);
     let addr = mk_default_storage();
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
@@ -338,7 +338,7 @@ fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: ~str}, 
     }
 }
 
-fn send(sock: @socket_handle, buf: &[u8]) -> result<uint, ~str> unsafe {
+pub fn send(sock: @socket_handle, buf: &[u8]) -> result<uint, ~str> unsafe {
     let amt = c::send(sock.sockfd, vec::raw::to_ptr(buf),
                       vec::len(buf) as libc::c_int, 0i32);
     if amt == -1_i32 {
@@ -350,7 +350,7 @@ fn send(sock: @socket_handle, buf: &[u8]) -> result<uint, ~str> unsafe {
 }
 
 // Useful for sending str data (where you want to use as_buf instead of as_buffer).
-fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, ~str> unsafe {
+pub fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, ~str> unsafe {
     let amt = c::send(sock.sockfd, buf, len as libc::c_int, 0i32);
     if amt == -1_i32 {
         log_err(#fmt["send error"]);
@@ -360,7 +360,7 @@ fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, ~str> uns
     }
 }
 
-fn recv(sock: @socket_handle, len: uint) -> result<{buffer: ~[u8], bytes: uint}, ~str> unsafe {
+pub fn recv(sock: @socket_handle, len: uint) -> result<{buffer: ~[u8], bytes: uint}, ~str> unsafe {
     let buf = vec::from_elem(len + 1u, 0u8);
     let bytes = c::recv(sock.sockfd, vec::raw::to_ptr(buf), len as libc::c_int, 0i32);
     if bytes == -1_i32 {
@@ -371,7 +371,7 @@ fn recv(sock: @socket_handle, len: uint) -> result<{buffer: ~[u8], bytes: uint},
     }
 }
 
-fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
+pub fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
     -> result<uint, ~str> unsafe {
     let (to_saddr, to_len) = match *to {
       ipv4(s)  => { (*(ptr::addr_of(&s) as *sockaddr_storage),
@@ -391,7 +391,7 @@ fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
     }
 }
 
-fn recvfrom(sock: @socket_handle, len: uint)
+pub fn recvfrom(sock: @socket_handle, len: uint)
     -> result<(~[u8], uint, sockaddr), ~str> unsafe {
     let from_saddr = mk_default_storage();
     let unused: socklen_t = 0u32;
@@ -413,7 +413,7 @@ fn recvfrom(sock: @socket_handle, len: uint)
     }
 }
 
-fn setsockopt(sock: @socket_handle, option: int, value: int)
+pub fn setsockopt(sock: @socket_handle, option: int, value: int)
     -> result<libc::c_int, ~str> unsafe {
     let val = value;
     let r = c::setsockopt(sock.sockfd, SOL_SOCKET, option as libc::c_int,
@@ -427,29 +427,29 @@ fn setsockopt(sock: @socket_handle, option: int, value: int)
     }
 }
 
-fn enablesockopt(sock: @socket_handle, option: int)
+pub fn enablesockopt(sock: @socket_handle, option: int)
     -> result<libc::c_int, ~str> unsafe {
     setsockopt(sock, option, 1)
 }
 
-fn disablesockopt(sock: @socket_handle, option: int)
+pub fn disablesockopt(sock: @socket_handle, option: int)
     -> result<libc::c_int, ~str> unsafe {
     setsockopt(sock, option, 0)
 }
 
-fn htons(hostshort: u16) -> u16 {
+pub fn htons(hostshort: u16) -> u16 {
     c::htons(hostshort)
 }
 
-fn htonl(hostlong: u32) -> u32 {
+pub fn htonl(hostlong: u32) -> u32 {
     c::htonl(hostlong)
 }
 
-fn ntohs(netshort: u16) -> u16 {
+pub fn ntohs(netshort: u16) -> u16 {
     c::ntohs(netshort)
 }
 
-fn ntohl(netlong: u32) -> u32 {
+pub fn ntohl(netlong: u32) -> u32 {
     c::ntohl(netlong)
 }
 
