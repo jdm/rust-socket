@@ -1,17 +1,7 @@
 // Last built with rust commit 39c0d3591e0326874b7263a621ce09ecd64f0eb2 (0.4)
-use result = result::Result;
+use Result = result::Result;
 use core::rand;
 
-export sockaddr, getaddrinfo, bind_socket, socket_handle, connect, listen, accept,
-       send, recv, sendto, recvfrom, setsockopt, enablesockopt, disablesockopt,
-       htons, htonl, ntohs, ntohl, sockaddr4_in, sockaddr6_in, sockaddr_basic,
-       sockaddr_storage, inet_ntop, send_buf, create_socket;
-export SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SO_DEBUG, SO_ACCEPTCONN, SO_REUSEADDR, 
-       SO_KEEPALIVE, SO_DONTROUTE, SO_BROADCAST, SO_LINGER, SO_OOBINLINE, SO_SNDBUF, 
-       SO_RCVBUF, SO_SNDLOWAT, SO_RCVLOWAT, SO_SNDTIMEO, SO_RCVTIMEO, SO_ERROR, SO_TYPE,
-       AF_UNSPEC, AF_UNIX, AF_INET, AF_INET6, AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST,
-       AI_NUMERICSERV, INET6_ADDRSTRLEN;
-       
 pub type c_str = *libc::c_char;
 
 #[nolink]
@@ -215,7 +205,7 @@ pub fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~st
         }
     }
     c::freeaddrinfo(servinfo); 
-    result
+    move result
 }
 
 pub fn inet_ntop(address: &addrinfo) -> ~str unsafe {
@@ -241,9 +231,17 @@ pub fn log_err(mesg: &str)
 }
 
 // TODO: Isn't socket::socket_handle redundant?
-pub struct socket_handle {
+pub struct socket_handle
+{
 	sockfd: libc::c_int,
-	drop {c::close(self.sockfd);}
+}
+
+impl socket_handle : Drop
+{
+    fn finalize()
+    {
+        c::close(self.sockfd);
+    }
 }
 
 pub fn socket_handle(x: libc::c_int) -> socket_handle
@@ -251,7 +249,7 @@ pub fn socket_handle(x: libc::c_int) -> socket_handle
     socket_handle {sockfd: x}
 }
 
-pub fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
+pub fn bind_socket(host: &str, port: u16) -> Result<@socket_handle, ~str> unsafe {
     let err = for getaddrinfo(host, port) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
         {
@@ -280,7 +278,7 @@ pub fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe
     }
 }
 
-pub fn connect(host: &str, port: u16) -> result<@socket_handle, ~str> {
+pub fn connect(host: &str, port: u16) -> Result<@socket_handle, ~str> {
     info!("connecting to %s:%?", host, port);
     let err = for getaddrinfo(host, port) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
@@ -306,7 +304,7 @@ pub fn connect(host: &str, port: u16) -> result<@socket_handle, ~str> {
     }
 }
 
-pub fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, ~str> {
+pub fn listen(sock: @socket_handle, backlog: i32) -> Result<@socket_handle, ~str> {
     if c::listen(sock.sockfd, backlog) == -1_i32 {
         log_err(~"listen error");
         result::Err(~"listen failed")
@@ -316,7 +314,7 @@ pub fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, ~str
 }
 
 // Returns a fd to allow multi-threaded servers to send the fd to a task.
-pub fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: ~str}, ~str> unsafe {
+pub fn accept(sock: @socket_handle) -> Result<{fd: libc::c_int, remote_addr: ~str}, ~str> unsafe {
     info!("accepting with socket %?", sock.sockfd);
     let addr = mk_default_storage();
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
@@ -338,7 +336,7 @@ pub fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: ~st
     }
 }
 
-pub fn send(sock: @socket_handle, buf: &[u8]) -> result<uint, ~str> unsafe {
+pub fn send(sock: @socket_handle, buf: &[u8]) -> Result<uint, ~str> unsafe {
     let amt = c::send(sock.sockfd, vec::raw::to_ptr(buf),
                       vec::len(buf) as libc::c_int, 0i32);
     if amt == -1_i32 {
@@ -350,7 +348,7 @@ pub fn send(sock: @socket_handle, buf: &[u8]) -> result<uint, ~str> unsafe {
 }
 
 // Useful for sending str data (where you want to use as_buf instead of as_buffer).
-pub fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, ~str> unsafe {
+pub fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> Result<uint, ~str> unsafe {
     let amt = c::send(sock.sockfd, buf, len as libc::c_int, 0i32);
     if amt == -1_i32 {
         log_err(#fmt["send error"]);
@@ -360,19 +358,19 @@ pub fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, ~str>
     }
 }
 
-pub fn recv(sock: @socket_handle, len: uint) -> result<{buffer: ~[u8], bytes: uint}, ~str> unsafe {
+pub fn recv(sock: @socket_handle, len: uint) -> Result<{buffer: ~[u8], bytes: uint}, ~str> unsafe {
     let buf = vec::from_elem(len + 1u, 0u8);
     let bytes = c::recv(sock.sockfd, vec::raw::to_ptr(buf), len as libc::c_int, 0i32);
     if bytes == -1_i32 {
         log_err(#fmt["recv error"]);
         result::Err(~"recv failed")
     } else {
-        result::Ok({buffer: buf, bytes: bytes as uint})
+        result::Ok({buffer: move buf, bytes: bytes as uint})
     }
 }
 
 pub fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
-    -> result<uint, ~str> unsafe {
+    -> Result<uint, ~str> unsafe {
     let (to_saddr, to_len) = match *to {
       ipv4(s)  => { (*(ptr::addr_of(&s) as *sockaddr_storage),
                  sys::size_of::<sockaddr4_in>()) }
@@ -392,7 +390,7 @@ pub fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
 }
 
 pub fn recvfrom(sock: @socket_handle, len: uint)
-    -> result<(~[u8], uint, sockaddr), ~str> unsafe {
+    -> Result<(~[u8], uint, sockaddr), ~str> unsafe {
     let from_saddr = mk_default_storage();
     let unused: socklen_t = 0u32;
     let buf = vec::from_elem(len + 1u, 0u8);
@@ -402,7 +400,7 @@ pub fn recvfrom(sock: @socket_handle, len: uint)
         log_err(#fmt["recvfrom error"]);
         result::Err(~"recvfrom failed")
     } else {
-        result::Ok((buf, amt as uint,
+        result::Ok((move buf, amt as uint,
                    if from_saddr.ss_family as u8 == AF_INET as u8 {
                        ipv4(*(ptr::addr_of(&from_saddr) as *sockaddr4_in))
                    } else if from_saddr.ss_family as u8 == AF_INET6 as u8 {
@@ -414,7 +412,7 @@ pub fn recvfrom(sock: @socket_handle, len: uint)
 }
 
 pub fn setsockopt(sock: @socket_handle, option: int, value: int)
-    -> result<libc::c_int, ~str> unsafe {
+    -> Result<libc::c_int, ~str> unsafe {
     let val = value;
     let r = c::setsockopt(sock.sockfd, SOL_SOCKET, option as libc::c_int,
                           cast::reinterpret_cast(&ptr::addr_of(&val)),
@@ -428,12 +426,12 @@ pub fn setsockopt(sock: @socket_handle, option: int, value: int)
 }
 
 pub fn enablesockopt(sock: @socket_handle, option: int)
-    -> result<libc::c_int, ~str> unsafe {
+    -> Result<libc::c_int, ~str> unsafe {
     setsockopt(sock, option, 1)
 }
 
 pub fn disablesockopt(sock: @socket_handle, option: int)
-    -> result<libc::c_int, ~str> unsafe {
+    -> Result<libc::c_int, ~str> unsafe {
     setsockopt(sock, option, 0)
 }
 
@@ -458,13 +456,14 @@ fn test_server_client()
 {
     fn run_client(test_str: &str, port: u16)
     {
-         let ts = test_str.to_unique();
+         let ts = test_str.to_owned();
          do task::spawn {
              match connect(~"localhost", port)
              {
-                 result::Ok(handle) =>
+                 result::Ok(handle) => 
                  {
-                     let res = str::as_buf(ts, |buf, _len| {send_buf(handle, buf, str::len(ts))});
+                     let f = |buf, _len, copy ts, copy handle| {send_buf(handle, buf, ts.len())};
+                     let res = str::as_buf(ts, f);
                      assert result::is_ok(&res);
                  }
                  result::Err(err) =>

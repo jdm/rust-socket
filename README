@@ -5,3 +5,4 @@ Tested with:
 Linux shell 3.2.0-24-generic #39-Ubuntu SMP Mon May 21 16:52:17 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
 
 Note that rust now includes socket APIs. See std::net_tcp and related.
+Built with rust using commit fdf3e1a43048603cb160e3fc5ec5e785a4910132.
