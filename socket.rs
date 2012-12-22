@@ -1,18 +1,7 @@
 // Last built with rust commit 8b98e5a296d95c5e832db0756828e5bec31c6f50 (0.5)
 use core::result;
-//use result = result::Result;
 use core::rand;
 
-export sockaddr, getaddrinfo, bind_socket, socket_handle, connect, listen, accept,
-       send, recv, sendto, recvfrom, setsockopt, enablesockopt, disablesockopt,
-       htons, htonl, ntohs, ntohl, sockaddr4_in, sockaddr6_in, sockaddr_basic,
-       sockaddr_storage, inet_ntop, send_buf, create_socket;
-export SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SO_DEBUG, SO_ACCEPTCONN, SO_REUSEADDR, 
-       SO_KEEPALIVE, SO_DONTROUTE, SO_BROADCAST, SO_LINGER, SO_OOBINLINE, SO_SNDBUF, 
-       SO_RCVBUF, SO_SNDLOWAT, SO_RCVLOWAT, SO_SNDTIMEO, SO_RCVTIMEO, SO_ERROR, SO_TYPE,
-       AF_UNSPEC, AF_UNIX, AF_INET, AF_INET6, AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST,
-       AI_NUMERICSERV, INET6_ADDRSTRLEN;
-       
 pub type c_str = *libc::c_char;
 
 #[nolink]
@@ -216,7 +205,7 @@ pub fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~st
         }
     }
     c::freeaddrinfo(servinfo); 
-    result
+    move result
 }
 
 pub fn inet_ntop(address: &addrinfo) -> ~str unsafe {
@@ -242,9 +231,17 @@ pub fn log_err(mesg: &str)
 }
 
 // TODO: Isn't socket::socket_handle redundant?
-pub struct socket_handle {
+pub struct socket_handle
+{
 	sockfd: libc::c_int,
-	drop {c::close(self.sockfd);}
+}
+
+impl socket_handle : Drop
+{
+    fn finalize(&self)
+    {
+        c::close(self.sockfd);
+    }
 }
 
 pub fn socket_handle(x: libc::c_int) -> socket_handle
@@ -368,7 +365,7 @@ pub fn recv(sock: @socket_handle, len: uint) -> result::Result<{buffer: ~[u8], b
         log_err(fmt!("recv error"));
         result::Err(~"recv failed")
     } else {
-        result::Ok({buffer: buf, bytes: bytes as uint})
+        result::Ok({buffer: move buf, bytes: bytes as uint})
     }
 }
 
@@ -403,7 +400,7 @@ pub fn recvfrom(sock: @socket_handle, len: uint)
         log_err(fmt!("recvfrom error"));
         result::Err(~"recvfrom failed")
     } else {
-        result::Ok((buf, amt as uint,
+        result::Ok((move buf, amt as uint,
                    if from_saddr.ss_family as u8 == AF_INET as u8 {
                        ipv4(*(ptr::addr_of(&from_saddr) as *sockaddr4_in))
                    } else if from_saddr.ss_family as u8 == AF_INET6 as u8 {
@@ -463,9 +460,10 @@ fn test_server_client()
          do task::spawn {
              match connect(~"localhost", port)
              {
-                 result::Ok(handle) =>
+                 result::Ok(handle) => 
                  {
-                     let res = str::as_buf(ts, |buf, _len| {send_buf(handle, buf, str::len(ts))});
+                     let f = |buf, _len, copy ts, copy handle| {send_buf(handle, buf, ts.len())};
+                     let res = str::as_buf(ts, f);
                      assert result::is_ok(&res);
                  }
                  result::Err(err) =>
