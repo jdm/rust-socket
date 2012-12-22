@@ -7,13 +7,14 @@
 #[license = "MIT"];
 #[crate_type = "lib"];
 
-#[allow(unused_imports)];
-#[allow(implicit_copies)];
-#[allow(deprecated_pattern)];
+#[allow(deprecated_self)];    	// TODO: enable some of these
+#[allow(structural_records)];
 
-#[allow(structural_records)];	// TODO: enable some of these
-#[allow(deprecated_mode)];
-#[allow(non_implicitly_copyable_typarams)];
+#[warn(deprecated_pattern)];
+#[warn(deprecated_mode)];
+#[warn(non_implicitly_copyable_typarams)];
+#[warn(implicit_copies)];
+#[warn(unused_imports)];
 
 extern mod std;
 
