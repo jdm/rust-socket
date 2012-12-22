@@ -1,5 +1,6 @@
-// Last built with rust commit 39c0d3591e0326874b7263a621ce09ecd64f0eb2 (0.4)
-use result = result::Result;
+// Last built with rust commit 8b98e5a296d95c5e832db0756828e5bec31c6f50 (0.5)
+use core::result;
+//use result = result::Result;
 use core::rand;
 
 export sockaddr, getaddrinfo, bind_socket, socket_handle, connect, listen, accept,
@@ -194,7 +195,7 @@ pub fn mk_default_addrinfo() -> addrinfo {
 pub fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~str> unsafe {
     let hints = {ai_family: AF_UNSPEC, ai_socktype: SOCK_STREAM, ..mk_default_addrinfo()};
     let servinfo: *addrinfo = ptr::null();
-    let s_port = #fmt["%u", port as uint];
+    let s_port = fmt!("%u", port as uint);
     let mut result = option::None;
     do str::as_c_str(host) |host| {
         do str::as_c_str(s_port) |port| {
@@ -251,7 +252,7 @@ pub fn socket_handle(x: libc::c_int) -> socket_handle
     socket_handle {sockfd: x}
 }
 
-pub fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe {
+pub fn bind_socket(host: &str, port: u16) -> result::Result<@socket_handle, ~str> unsafe {
     let err = for getaddrinfo(host, port) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
         {
@@ -269,7 +270,7 @@ pub fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe
                     return result::Ok(@socket_handle(sockfd));
                 }
             } else {
-                log_err(#fmt["socket(%s) error", inet_ntop(&ai)]);
+                log_err(fmt!("socket(%s) error", inet_ntop(&ai)));
             }
         }
     };
@@ -280,7 +281,7 @@ pub fn bind_socket(host: &str, port: u16) -> result<@socket_handle, ~str> unsafe
     }
 }
 
-pub fn connect(host: &str, port: u16) -> result<@socket_handle, ~str> {
+pub fn connect(host: &str, port: u16) -> result::Result<@socket_handle, ~str> {
     info!("connecting to %s:%?", host, port);
     let err = for getaddrinfo(host, port) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
@@ -295,7 +296,7 @@ pub fn connect(host: &str, port: u16) -> result<@socket_handle, ~str> {
                     return result::Ok(@socket_handle(sockfd));
                 }
             } else {
-                log_err(#fmt["socket(%s, %?) error", host, port]);
+                log_err(fmt!("socket(%s, %?) error", host, port));
             }
         }
     };
@@ -306,7 +307,7 @@ pub fn connect(host: &str, port: u16) -> result<@socket_handle, ~str> {
     }
 }
 
-pub fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, ~str> {
+pub fn listen(sock: @socket_handle, backlog: i32) -> result::Result<@socket_handle, ~str> {
     if c::listen(sock.sockfd, backlog) == -1_i32 {
         log_err(~"listen error");
         result::Err(~"listen failed")
@@ -316,14 +317,14 @@ pub fn listen(sock: @socket_handle, backlog: i32) -> result<@socket_handle, ~str
 }
 
 // Returns a fd to allow multi-threaded servers to send the fd to a task.
-pub fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: ~str}, ~str> unsafe {
+pub fn accept(sock: @socket_handle) -> result::Result<{fd: libc::c_int, remote_addr: ~str}, ~str> unsafe {
     info!("accepting with socket %?", sock.sockfd);
     let addr = mk_default_storage();
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
     let fd = c::accept(sock.sockfd, ptr::addr_of(&addr), ptr::addr_of(&unused));
     
     if fd == -1_i32 {
-        log_err(#fmt["accept error"]);
+        log_err(fmt!("accept error"));
         result::Err(~"accept failed")
     } else {
         let their_addr = if addr.ss_family as u8 == AF_INET as u8 {
@@ -338,11 +339,11 @@ pub fn accept(sock: @socket_handle) -> result<{fd: libc::c_int, remote_addr: ~st
     }
 }
 
-pub fn send(sock: @socket_handle, buf: &[u8]) -> result<uint, ~str> unsafe {
+pub fn send(sock: @socket_handle, buf: &[u8]) -> result::Result<uint, ~str> unsafe {
     let amt = c::send(sock.sockfd, vec::raw::to_ptr(buf),
                       vec::len(buf) as libc::c_int, 0i32);
     if amt == -1_i32 {
-        log_err(#fmt["send error"]);
+        log_err(fmt!("send error"));
         result::Err(~"send failed")
     } else {
         result::Ok(amt as uint)
@@ -350,21 +351,21 @@ pub fn send(sock: @socket_handle, buf: &[u8]) -> result<uint, ~str> unsafe {
 }
 
 // Useful for sending str data (where you want to use as_buf instead of as_buffer).
-pub fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result<uint, ~str> unsafe {
+pub fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result::Result<uint, ~str> unsafe {
     let amt = c::send(sock.sockfd, buf, len as libc::c_int, 0i32);
     if amt == -1_i32 {
-        log_err(#fmt["send error"]);
+        log_err(fmt!("send error"));
         result::Err(~"send_buf failed")
     } else {
         result::Ok(amt as uint)
     }
 }
 
-pub fn recv(sock: @socket_handle, len: uint) -> result<{buffer: ~[u8], bytes: uint}, ~str> unsafe {
+pub fn recv(sock: @socket_handle, len: uint) -> result::Result<{buffer: ~[u8], bytes: uint}, ~str> unsafe {
     let buf = vec::from_elem(len + 1u, 0u8);
     let bytes = c::recv(sock.sockfd, vec::raw::to_ptr(buf), len as libc::c_int, 0i32);
     if bytes == -1_i32 {
-        log_err(#fmt["recv error"]);
+        log_err(fmt!("recv error"));
         result::Err(~"recv failed")
     } else {
         result::Ok({buffer: buf, bytes: bytes as uint})
@@ -372,7 +373,7 @@ pub fn recv(sock: @socket_handle, len: uint) -> result<{buffer: ~[u8], bytes: ui
 }
 
 pub fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
-    -> result<uint, ~str> unsafe {
+    -> result::Result<uint, ~str> unsafe {
     let (to_saddr, to_len) = match *to {
       ipv4(s)  => { (*(ptr::addr_of(&s) as *sockaddr_storage),
                  sys::size_of::<sockaddr4_in>()) }
@@ -384,7 +385,7 @@ pub fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
     let amt = c::sendto(sock.sockfd, vec::raw::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
                         ptr::addr_of(&to_saddr), to_len as u32);
     if amt == -1_i32 {
-        log_err(#fmt["sendto error"]);
+        log_err(fmt!("sendto error"));
         result::Err(~"sendto failed")
     } else {
         result::Ok(amt as uint)
@@ -392,14 +393,14 @@ pub fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
 }
 
 pub fn recvfrom(sock: @socket_handle, len: uint)
-    -> result<(~[u8], uint, sockaddr), ~str> unsafe {
+    -> result::Result<(~[u8], uint, sockaddr), ~str> unsafe {
     let from_saddr = mk_default_storage();
     let unused: socklen_t = 0u32;
     let buf = vec::from_elem(len + 1u, 0u8);
     let amt = c::recvfrom(sock.sockfd, vec::raw::to_ptr(buf), vec::len(buf) as libc::c_int, 0i32,
                           ptr::addr_of(&from_saddr), ptr::addr_of(&unused));
     if amt == -1_i32 {
-        log_err(#fmt["recvfrom error"]);
+        log_err(fmt!("recvfrom error"));
         result::Err(~"recvfrom failed")
     } else {
         result::Ok((buf, amt as uint,
@@ -414,13 +415,13 @@ pub fn recvfrom(sock: @socket_handle, len: uint)
 }
 
 pub fn setsockopt(sock: @socket_handle, option: int, value: int)
-    -> result<libc::c_int, ~str> unsafe {
+    -> result::Result<libc::c_int, ~str> unsafe {
     let val = value;
     let r = c::setsockopt(sock.sockfd, SOL_SOCKET, option as libc::c_int,
                           cast::reinterpret_cast(&ptr::addr_of(&val)),
                           sys::size_of::<int>() as socklen_t);
     if r == -1_i32 {
-        log_err(#fmt["setsockopt error"]);
+        log_err(fmt!("setsockopt error"));
         result::Err(~"setsockopt failed")
     } else {
         result::Ok(r)
@@ -428,12 +429,12 @@ pub fn setsockopt(sock: @socket_handle, option: int, value: int)
 }
 
 pub fn enablesockopt(sock: @socket_handle, option: int)
-    -> result<libc::c_int, ~str> unsafe {
+    -> result::Result<libc::c_int, ~str> unsafe {
     setsockopt(sock, option, 1)
 }
 
 pub fn disablesockopt(sock: @socket_handle, option: int)
-    -> result<libc::c_int, ~str> unsafe {
+    -> result::Result<libc::c_int, ~str> unsafe {
     setsockopt(sock, option, 0)
 }
 
@@ -458,7 +459,7 @@ fn test_server_client()
 {
     fn run_client(test_str: &str, port: u16)
     {
-         let ts = test_str.to_unique();
+         let ts = test_str.to_owned();
          do task::spawn {
              match connect(~"localhost", port)
              {
@@ -547,7 +548,7 @@ fn test_getaddrinfo_localhost() {
     let servinfo: *addrinfo = ptr::null();
     let port = 48007u16;
     do str::as_c_str(~"localhost") |host| {
-        do str::as_c_str(#fmt["%u", port as uint]) |p| {
+        do str::as_c_str(fmt!("%u", port as uint)) |p| {
             let status = c::getaddrinfo(host, p, ptr::addr_of(&hints), ptr::addr_of(&servinfo));
             assert status == 0_i32;
             unsafe {
@@ -559,5 +560,39 @@ fn test_getaddrinfo_localhost() {
             }
             c::freeaddrinfo(servinfo)
         }
-    };
+    }
 }
+
+pub fn getaddrinfo2(host: &str, service: &str, f: fn(addrinfo) -> bool) -> Option<~str> unsafe {
+    let hints = {ai_family: AF_INET, ai_socktype: SOCK_STREAM, ..mk_default_addrinfo()};
+    let servinfo: *addrinfo = ptr::null();
+    let mut result = option::None;
+    do str::as_c_str(host) |host| {
+        do str::as_c_str(service) |port| {
+                     let status = c::getaddrinfo(host, port, ptr::addr_of(&hints),
+                                                 ptr::addr_of(&servinfo));
+                     if status == 0i32 {
+                         let mut p = servinfo;
+                         while p != ptr::null() {
+                             if !f(*p) {
+                                 break;
+                             }
+                             p = cast::reinterpret_cast(&(*p).ai_next);
+                         }
+                     } else {
+                         warn!("getaddrinfo returned %? (%s)", status, str::raw::from_c_str(c::gai_strerror(status)));
+                         result = option::Some(~"getaddrinfo failed");
+                     }
+        }
+    }
+    c::freeaddrinfo(servinfo); 
+    result
+}
+
+//pub fn getaddrinfo(host: &str, port: u16, f: fn(addrinfo) -> bool) -> Option<~str> unsafe {
+
+//pub fn mk_default_addrinfo() -> addrinfo {
+//    {ai_flags: 0i32, ai_family: 0i32, ai_socktype: 0i32, ai_protocol: 0i32, ai_addrlen: 0u32,
+//     ai_canonname: ptr::null(), ai_addr: ptr::null(), ai_next: ptr::null()}
+//}
+

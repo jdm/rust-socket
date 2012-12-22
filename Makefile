@@ -7,7 +7,7 @@ all:
 
 check:
 	$(RUSTC) -o bin/test-socket --test crate.rc
-	export RUST_LOG=socket=3 && $(DEBUGGER) bin/test-socket
+	export RUST_LOG=socket=1 && $(DEBUGGER) bin/test-socket
 
 check1:
 	$(RUSTC) -o bin/test-socket --test crate.rc
