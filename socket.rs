@@ -265,7 +265,8 @@ pub fn sockaddr_to_string(saddr: &sockaddr) -> ~str
 
 #[cfg(target_os = "freebsd")]
 #[cfg(target_os = "macos")]
-pub fn mk_default_storage() -> sockaddr_storage {
+pub fn mk_default_storage() -> sockaddr_storage
+{
     sockaddr_storage {
         ss_len: 0u8,
         ss_family: 0u8,
@@ -306,7 +307,8 @@ pub fn mk_default_storage() -> sockaddr_storage {
 }
 
 #[cfg(target_os = "linux")]
-pub fn mk_default_storage() -> sockaddr_storage {
+pub fn mk_default_storage() -> sockaddr_storage
+{
     sockaddr_storage {
         ss_family: 0,
         contents: (
@@ -348,7 +350,8 @@ pub fn mk_default_storage() -> sockaddr_storage {
 #[cfg(target_os = "freebsd")]
 #[cfg(target_os = "win32")]
 #[cfg(target_os = "macos")]
-pub fn mk_default_addrinfo() -> addrinfo {
+pub fn mk_default_addrinfo() -> addrinfo
+{
     addrinfo {
         ai_flags: 0i32,
         ai_family: 0i32,
@@ -362,7 +365,8 @@ pub fn mk_default_addrinfo() -> addrinfo {
 }
 
 #[cfg(target_os = "linux")]
-pub fn mk_default_addrinfo() -> addrinfo {
+pub fn mk_default_addrinfo() -> addrinfo
+{
     addrinfo {
         ai_flags: 0i32,
         ai_family: 0i32,
@@ -375,7 +379,8 @@ pub fn mk_default_addrinfo() -> addrinfo {
     }
 }
 
-pub unsafe fn getaddrinfo(host: &str, port: u16, f: &fn(a: addrinfo) -> bool) -> Option<~str> {
+pub unsafe fn getaddrinfo(host: &str, port: u16, f: &fn(a: addrinfo) -> bool) -> Option<~str>
+{
     let mut hints: addrinfo = mk_default_addrinfo();
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -406,7 +411,8 @@ pub unsafe fn getaddrinfo(host: &str, port: u16, f: &fn(a: addrinfo) -> bool) ->
     result.clone()
 }
 
-pub fn inet_ntop(address: &addrinfo) -> ~str {
+pub fn inet_ntop(address: &addrinfo) -> ~str
+{
     unsafe {
         let buffer = vec::from_elem(INET6_ADDRSTRLEN as uint + 1u, 0u8);
         c::inet_ntop(address.ai_family,
@@ -425,7 +431,8 @@ pub fn inet_ntop(address: &addrinfo) -> ~str {
 
 // TODO: there is no portable way to get errno from rust so, for now, we'll just write them to stderr
 // See #2269.
-pub fn log_err(mesg: &str) {
+pub fn log_err(mesg: &str)
+{
     unsafe {
         do str::as_c_str(mesg) |buffer| {libc::perror(buffer)};
     }
@@ -443,11 +450,13 @@ impl Drop for socket_handle {
     }
 }
 
-pub fn socket_handle(x: libc::c_int) -> socket_handle {
+pub fn socket_handle(x: libc::c_int) -> socket_handle
+{
     socket_handle {sockfd: x}
 }
 
-pub unsafe fn bind_socket(host: &str, port: u16) -> result::Result<@socket_handle, ~str> {
+pub unsafe fn bind_socket(host: &str, port: u16) -> result::Result<@socket_handle, ~str>
+{
     let err = for getaddrinfo(host, port) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
         {
@@ -476,7 +485,8 @@ pub unsafe fn bind_socket(host: &str, port: u16) -> result::Result<@socket_handl
     }
 }
 
-pub unsafe fn connect(host: &str, port: u16) -> result::Result<@socket_handle, ~str> {
+pub unsafe fn connect(host: &str, port: u16) -> result::Result<@socket_handle, ~str>
+{
     info!("connecting to %s:%?", host, port);
     let err = for getaddrinfo(host, port) |ai| {
         if ai.ai_family == AF_INET || ai.ai_family == AF_INET6    // TODO: should do something to support AF_UNIX
@@ -502,7 +512,8 @@ pub unsafe fn connect(host: &str, port: u16) -> result::Result<@socket_handle, ~
     }
 }
 
-pub fn listen(sock: @socket_handle, backlog: i32) -> result::Result<@socket_handle, ~str> {
+pub fn listen(sock: @socket_handle, backlog: i32) -> result::Result<@socket_handle, ~str>
+{
     unsafe {
         if c::listen(sock.sockfd, backlog) == -1_i32 {
             log_err(~"listen error");
@@ -519,7 +530,8 @@ pub struct accept_socket {
     remote_addr: ~str
 }
 
-pub unsafe fn accept(sock: @socket_handle) -> result::Result<accept_socket, ~str> {
+pub unsafe fn accept(sock: @socket_handle) -> result::Result<accept_socket, ~str>
+{
     info!("accepting with socket %?", sock.sockfd);
     let addr = mk_default_storage();
     let unused: socklen_t = sys::size_of::<sockaddr>() as socklen_t;
@@ -544,7 +556,8 @@ pub unsafe fn accept(sock: @socket_handle) -> result::Result<accept_socket, ~str
     }
 }
 
-pub unsafe fn send(sock: @socket_handle, buf: &[u8]) -> result::Result<uint, ~str> {
+pub unsafe fn send(sock: @socket_handle, buf: &[u8]) -> result::Result<uint, ~str>
+{
     let amt = c::send(sock.sockfd, vec::raw::to_ptr(buf),
                       vec::len(buf) as libc::c_int, 0i32);
     if amt == -1_i32 {
@@ -556,7 +569,8 @@ pub unsafe fn send(sock: @socket_handle, buf: &[u8]) -> result::Result<uint, ~st
 }
 
 // Useful for sending str data (where you want to use as_buf instead of as_buffer).
-pub unsafe fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result::Result<uint, ~str> {
+pub unsafe fn send_buf(sock: @socket_handle, buf: *u8, len: uint) -> result::Result<uint, ~str>
+{
     let amt = c::send(sock.sockfd, buf, len as libc::c_int, 0i32);
     if amt == -1_i32 {
         log_err(fmt!("send error"));
@@ -571,7 +585,8 @@ pub struct recv_buffer {
     bytes: uint
 }
 
-pub unsafe fn recv(sock: @socket_handle, len: uint) -> result::Result<~recv_buffer, ~str> {
+pub unsafe fn recv(sock: @socket_handle, len: uint) -> result::Result<~recv_buffer, ~str>
+{
     let buf = vec::from_elem(len + 1u, 0u8);
     let bytes = c::recv(sock.sockfd, vec::raw::to_ptr(buf), len as libc::c_int, 0i32);
     if bytes == -1_i32 {
@@ -586,7 +601,8 @@ pub unsafe fn recv(sock: @socket_handle, len: uint) -> result::Result<~recv_buff
 }
 
 pub unsafe fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
-    -> result::Result<uint, ~str> {
+    -> result::Result<uint, ~str>
+{
     let (to_saddr, to_len) = match *to {
       ipv4(s)  => { (*(ptr::addr_of(&s) as *sockaddr_storage),
                  sys::size_of::<sockaddr4_in>()) }
@@ -606,7 +622,8 @@ pub unsafe fn sendto(sock: @socket_handle, buf: &[u8], to: &sockaddr)
 }
 
 pub unsafe fn recvfrom(sock: @socket_handle, len: uint)
-        -> result::Result<(~[u8], uint, sockaddr), ~str> {
+        -> result::Result<(~[u8], uint, sockaddr), ~str>
+{
     let from_saddr = mk_default_storage();
     let unused: socklen_t = 0u32;
     let buf = vec::from_elem(len + 1u, 0u8);
@@ -628,7 +645,8 @@ pub unsafe fn recvfrom(sock: @socket_handle, len: uint)
 }
 
 pub unsafe fn setsockopt(sock: @socket_handle, option: int, value: int)
-    -> result::Result<libc::c_int, ~str> {
+    -> result::Result<libc::c_int, ~str>
+{
     let val = value;
     let r = c::setsockopt(sock.sockfd, SOL_SOCKET, option as libc::c_int,
                           cast::reinterpret_cast(&ptr::addr_of(&val)),
@@ -642,28 +660,34 @@ pub unsafe fn setsockopt(sock: @socket_handle, option: int, value: int)
 }
 
 pub unsafe fn enablesockopt(sock: @socket_handle, option: int)
-    -> result::Result<libc::c_int, ~str> {
+    -> result::Result<libc::c_int, ~str>
+{
     setsockopt(sock, option, 1)
 }
 
 pub unsafe fn disablesockopt(sock: @socket_handle, option: int)
-    -> result::Result<libc::c_int, ~str> {
+    -> result::Result<libc::c_int, ~str>
+{
     setsockopt(sock, option, 0)
 }
 
-pub fn htons(hostshort: u16) -> u16 {
+pub fn htons(hostshort: u16) -> u16
+{
     unsafe { c::htons(hostshort) }
 }
 
-pub fn htonl(hostlong: u32) -> u32 {
+pub fn htonl(hostlong: u32) -> u32
+{
     unsafe { c::htonl(hostlong) }
 }
 
-pub fn ntohs(netshort: u16) -> u16 {
+pub fn ntohs(netshort: u16) -> u16
+{
     unsafe { c::ntohs(netshort) }
 }
 
-pub fn ntohl(netlong: u32) -> u32 {
+pub fn ntohl(netlong: u32) -> u32
+{
     unsafe {c::ntohl(netlong) }
 }
 
@@ -762,7 +786,8 @@ fn test_server_client()
 }
 
 #[test]
-fn test_getaddrinfo_localhost() {
+fn test_getaddrinfo_localhost()
+{
     info!("---- test_getaddrinfo_localhost ------------------------");
     let mut hints = mk_default_addrinfo();
     hints.ai_family = AF_UNSPEC;
@@ -788,7 +813,8 @@ fn test_getaddrinfo_localhost() {
     }
 }
 
-pub unsafe fn getaddrinfo2(host: &str, service: &str, f: &fn(a: addrinfo) -> bool) -> Option<~str> {
+pub unsafe fn getaddrinfo2(host: &str, service: &str, f: &fn(a: addrinfo) -> bool) -> Option<~str>
+{
     let mut hints = mk_default_addrinfo();
 
     hints.ai_family = AF_INET;
