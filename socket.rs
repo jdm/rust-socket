@@ -1,4 +1,3 @@
-// ast built with rust commit 8b98e5a296d95c5e832db0756828e5bec31c6f50 (0.5)
 use core::result;
 
 pub type c_str = *libc::c_char;

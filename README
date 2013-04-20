@@ -1,3 +1,5 @@
 A quick and dirty binding for the Posix sockets API. Changed to run on rust-0.6-stable.
 
 This is a huge WIP, but it compiles and passes some very basic tests. More work will be coming soon.
+
+Note that rust now includes socket APIs. See std::net_tcp and related.
