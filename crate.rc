@@ -1,22 +1,15 @@
 #[link(name = "socket",
        vers = "0.1", 
        uuid = "AF82CEF5-A320-49C0-AE56-43129C5229D5",
-       url = "https://github.com/jdm/rust-socket")];
+       url = "https://github.com/AndresOsinski/rust-socket")];
 
 #[comment = "Rust socket library"];
 #[license = "MIT"];
 #[crate_type = "lib"];
 
-#[allow(deprecated_self)];    	// TODO: enable some of these
-#[allow(structural_records)];
-
-#[warn(deprecated_pattern)];
-#[warn(deprecated_mode)];
-#[warn(non_implicitly_copyable_typarams)];
 #[warn(implicit_copies)];
 #[warn(unused_imports)];
 
 extern mod std;
 
 pub mod socket;
-
